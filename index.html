@@ -180,6 +180,11 @@ table.bg-t td:nth-child(5) input{width:100%;}
 table.gx input.gx-err{outline:2px solid var(--danger);}
 .gx-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;}
 .gx-bar .gx-tot{margin-left:auto;font-size:.85rem;color:var(--muted);}
+table.af-t{min-width:1100px;}
+table.af-t td:nth-child(2) input{width:150px;} table.af-t td:nth-child(3) input{width:80px;}
+table.af-t td:nth-child(n+5):nth-child(-n+10) input{width:88px;}
+table.af-t td:nth-child(4) input{width:92px;background:#f1f3f5;color:var(--muted);}
+table.af-t td:nth-child(11) input{width:100%;}
 .bm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
 .bm-head h2{margin-bottom:10px;}
 .bm-chiudi-btn{padding:8px 14px;font-size:.85rem;}
@@ -283,6 +288,7 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
       <div class="tabs-sep">Inventari</div>
       <button class="tab-btn" data-tab="nuovo">Nuovo inventario</button>
       <button class="tab-btn" data-tab="inv">Archivio inventari</button>
+      <button class="tab-btn" data-tab="mp">Media peso prodotti</button>
       <div class="tabs-sep">Aggiornamenti</div>
       <button class="tab-btn active" data-tab="carico">Carico merce</button>
       <button class="tab-btn" data-tab="scarico">Scarico merce</button>
@@ -556,6 +562,48 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
       <div class="msg" id="gx-msg"></div>
     </div>
 
+    <h3 style="margin-top:28px;">Altri formaggi</h3>
+    <div class="bm-quant" style="margin-top:8px;">
+      <div class="bm-quant-t">Altri formaggi <span>(forme intere a numero, tutto il resto in kg · il peso delle forme viene calcolato dalla pagina «Media peso prodotti»)</span></div>
+      <datalist id="af-prod-list"></datalist>
+      <div class="table-wrap gx-wrap"><table class="gx af-t">
+        <thead><tr><th>#</th><th>Prodotto</th><th>Forme intere</th><th>Forme in kg</th><th>Prodotto finito kg</th><th>Semilavorato kg</th><th>Polpa kg</th><th>Piatti kg</th><th>Croste kg</th><th>Briciole kg</th><th>Note</th><th></th></tr></thead>
+        <tbody id="af-body"></tbody>
+      </table></div>
+      <div class="gx-bar">
+        <button class="btn ghost" type="button" onclick="afAggiungi(1)">+ Aggiungi riga</button>
+        <button class="btn ghost" type="button" onclick="afSvuota()">Svuota</button>
+        <button class="btn" type="button" id="af-submit" onclick="afCarica()">Carica altri formaggi</button>
+      </div>
+      <div class="msg" id="af-msg"></div>
+    </div>
+
+    <h3>Riepilogo altri formaggi</h3>
+    <div class="table-toolbar bm-actions" style="margin-top:8px;"><button class="print-btn" onclick="afExcel()">📊 Scarica Excel</button></div>
+    <div class="table-wrap" style="margin-top:8px;"><table class="af-r">
+      <thead id="af-rhead"></thead>
+      <tbody id="af-rbody"></tbody>
+    </table></div>
+    <div class="count" id="af-count"></div>
+
+  </div>
+
+  <!-- MEDIA PESO PRODOTTI -->
+  <div class="panel" id="panel-mp">
+    <h2>Media peso prodotti</h2>
+    <p class="bm-note" style="margin-top:0">Inserisci i prodotti che ti interessano con il peso medio di una forma intera (kg). Il peso viene usato in «Nuovo inventario → Altri formaggi» per trasformare le forme in kg.</p>
+    <div class="grid" style="max-width:760px;">
+      <div><label>Prodotto</label><input id="mp-prodotto" type="text" autocomplete="off" autocapitalize="characters" placeholder="es. GRANA PADANO"></div>
+      <div><label>Media peso (kg)</label><input id="mp-peso" class="calc calc-kg calc-kg3" type="text" autocomplete="off" placeholder="es. 38,5"></div>
+      <div style="grid-column:1/-1"><label>Note</label><input id="mp-note" type="text" placeholder="facoltativo"></div>
+    </div>
+    <button class="btn" id="mp-submit" type="button" onclick="mpAggiungi()">Aggiungi prodotto</button>
+    <div class="msg" id="mp-msg"></div>
+    <div class="table-wrap" style="margin-top:12px;"><table>
+      <thead id="mp-head"></thead>
+      <tbody id="mp-body"></tbody>
+    </table></div>
+    <div class="count" id="mp-count"></div>
   </div>
 
   <!-- ARCHIVIO BILANCI -->
@@ -785,7 +833,7 @@ async function doLogin(ev){
 
 async function doLogout(){
   if(sb) await sb.auth.signOut();
-  DATA=[]; BM_DATA={PR:[],GP:[]}; BM_ERRORE=null; ARCH_DATA=[]; INV_DATA=[];
+  DATA=[]; BM_DATA={PR:[],GP:[]}; BM_ERRORE=null; ARCH_DATA=[]; INV_DATA=[]; MP_DATA=[]; AF_DATA=[];
   refreshAll();
   setStatus('Non connesso');
   showLogin();
@@ -877,13 +925,15 @@ function dismissMigrate(){
 }
 
 function switchTab(tab){
-  document.querySelector('.app').classList.toggle('view-bilancio', tab==='bpr'||tab==='bgp'||tab==='arch'||tab==='inv'||tab==='nuovo');
+  document.querySelector('.app').classList.toggle('view-bilancio', tab==='bpr'||tab==='bgp'||tab==='arch'||tab==='inv'||tab==='nuovo'||tab==='mp');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+tab));
   if(tab==='scarico') renderScaricoList();
   if(tab==='pegno') renderPegno();
   if(tab==='arch') renderArchivio();
   if(tab==='inv') renderInventari();
+  if(tab==='mp') renderMediaPeso();
+  if(tab==='nuovo') afAggiornaKg();
 }
 document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
@@ -1036,7 +1086,7 @@ function calcForme(testo){
   }catch(e){ return NaN; }
 }
 // Stessa logica per i kg: virgola decimale, 1.250,5 con il punto delle migliaia, risultato a 2 decimali
-function calcKg(testo){
+function calcKg(testo,dec=2){
   let t=String(testo==null?'':testo).trim();
   if(t.startsWith('=')) t=t.slice(1);
   t=t.replace(/\s+/g,'').replace(/×/g,'*').replace(/÷/g,'/');
@@ -1053,7 +1103,7 @@ function calcKg(testo){
   }
   function prodotto(){ let v=fattore(); while(peek()==='*'||peek()==='/'){ const op=t[i++]; const f=fattore(); if(op==='/'){ if(f===0) throw 0; v/=f; } else v*=f; } return v; }
   function somma(){ let v=prodotto(); while(peek()==='+'||peek()==='-'){ const op=t[i++]; const f=prodotto(); v=op==='+'?v+f:v-f; } return v; }
-  try{ const v=somma(); if(i!==t.length || !isFinite(v)) return NaN; return Math.round(v*100)/100; }catch(e){ return NaN; }
+  try{ const v=somma(); if(i!==t.length || !isFinite(v)) return NaN; const f=Math.pow(10,dec); return Math.round(v*f)/f; }catch(e){ return NaN; }
 }
 function leggiForme(id){ const el=document.getElementById(id); return el?calcForme(el.value):NaN; }
 // operazione scritta nel campo (es. 100+50), oppure quella già calcolata all'uscita dal campo; '' se era un numero semplice
@@ -1072,7 +1122,7 @@ function applicaCalcolo(el){
   const v=el.value.trim();
   if(!/[+\-*/=×÷()]/.test(v.replace(/^-/,''))) return;     // niente operazioni: nulla da fare
   const kg=el.classList.contains('calc-kg');
-  const n=kg?calcKg(v):calcForme(v);
+  const n=kg?calcKg(v,el.classList.contains('calc-kg3')?3:2):calcForme(v);
   if(!isNaN(n)){ const res=kg?String(n).replace('.',','):String(n); el.dataset.expr=v.replace(/^=/,'').replace(/\s+/g,''); el.dataset.res=res; el.value=res; el.title=''; el.style.outline=''; }
   else { el.style.outline='2px solid var(--danger)'; el.title=kg?'Operazione non valida':'Operazione non valida: usa solo numeri interi, + e -'; }
 }
@@ -1712,7 +1762,7 @@ async function loadBilancio(){
     BM_ERRORE=(e && e.message) ? e.message : String(e);
   }
   renderBilancio('bpr'); renderBilancio('bgp'); caricoElenco(); gxElencoMatricole();
-  loadBilancioQuant(); loadArchivio(); loadInventari();
+  loadBilancioQuant(); loadArchivio(); loadInventari(); loadMediaPeso(); loadAltriFormaggi();
 }
 
 // Righe con stessa matricola e stessa produzione -> un'unica riga di riepilogo
@@ -2347,9 +2397,9 @@ function invUltimo(){
 const MESI_LUNGHI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 function invChiudiApri(){
   const msg=document.getElementById('inv-msg'); msg.textContent=''; msg.className='msg';
-  if(!DATA.length){ msg.textContent='L\'inventario è vuoto: non c\'è niente da chiudere.'; msg.className='msg err'; return; }
+  if(!DATA.length&&!AF_DATA.length){ msg.textContent='L\'inventario è vuoto: non c\'è niente da chiudere.'; msg.className='msg err'; return; }
   const t=invTot(DATA);
-  document.getElementById('inv-chiudi-txt').textContent=`Chiudi l'inventario? Viene salvata una copia della conta (${fmtNum(DATA.length)} righe, ${fmtNum(t.forme)} forme, di cui ${fmtNum(t.pegno)} in pegno) nell'Archivio inventari. I dati restano qui, per gli aggiornamenti degli spostamenti.`;
+  document.getElementById('inv-chiudi-txt').textContent=`Chiudi l'inventario? Viene salvata una copia della conta (${fmtNum(DATA.length)} righe, ${fmtNum(t.forme)} forme, di cui ${fmtNum(t.pegno)} in pegno`+(AF_DATA.length?`, più ${fmtNum(AF_DATA.length)} righe di altri formaggi`:'')+`) nell'Archivio inventari. I dati restano qui, per gli aggiornamenti degli spostamenti.`;
   const d=new Date(); document.getElementById('inv-chiudi-data').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   document.getElementById('inv-chiudi-nome').value='';
   document.getElementById('inv-pulisci').style.display='none';
@@ -2364,26 +2414,30 @@ async function invChiudiConferma(){
   const righe=DATA.map(r=>({scalera:Number(r.scalera),matricola:r.matricola===null||r.matricola===undefined?'':String(r.matricola),mese:r.mese||'',forme:Number(r.forme)||0,tipologia:up(r.tipologia),note:up(r.note)}));
   const t=invTot(righe);
   document.getElementById('inv-chiudi').style.display='none';
-  const {error}=await sb.from(INV_TABLE).insert({nome,data_conta:data,righe,totale_forme:t.forme,forme_pegno:t.pegno});
+  const altri=AF_DATA.map(r=>({prodotto:r.prodotto,forme:Number(r.forme)||0,peso_medio_kg:Number(r.peso_medio_kg)||0,forme_kg:Number(r.forme_kg)||0,...Object.fromEntries(AF_KG.map(q=>[q.k,Number(r[q.k])||0])),note:r.note||''}));
+  let {error}=await sb.from(INV_TABLE).insert({nome,data_conta:data,righe,totale_forme:t.forme,forme_pegno:t.pegno,altri_formaggi:altri});
+  if(error && altri.length && /altri_formaggi/.test(error.message||'')){ error={message:'manca la colonna «altri_formaggi»: esegui inventari-altri-formaggi.sql in Supabase'}; }
+  if(error && !altri.length) ({error}=await sb.from(INV_TABLE).insert({nome,data_conta:data,righe,totale_forme:t.forme,forme_pegno:t.pegno}));
   if(error){ msg.textContent='Chiusura non riuscita: '+invErrTxt(error); msg.className='msg err'; return; }
   msg.textContent=`Inventario «${nome}» salvato nell'Archivio inventari (${fmtNum(righe.length)} righe, ${fmtNum(t.forme)} forme). I dati sono rimasti in inventario.`; msg.className='msg ok';
   await loadInventari();
 }
 function invPulisciApri(){
   const msg=document.getElementById('inv-msg'); msg.textContent=''; msg.className='msg';
-  if(!DATA.length){ msg.textContent='L\'inventario è già vuoto.'; msg.className='msg err'; return; }
+  if(!DATA.length&&!AF_DATA.length){ msg.textContent='L\'inventario è già vuoto.'; msg.className='msg err'; return; }
   const u=INV_DATA[0], t=invTot(DATA);
-  document.getElementById('inv-pulisci-txt').textContent=`Attenzione: vengono cancellate TUTTE le ${fmtNum(DATA.length)} righe dell'inventario (${fmtNum(t.forme)} forme, pegno compreso), per ripartire da una nuova conta. Gli inventari già chiusi nell'Archivio inventari restano. `+(u?`Ultimo inventario chiuso: «${u.nome}» (conta del ${invData(u.data_conta)}).`:'Non hai ancora chiuso nessun inventario: se prosegui, questa conta andrà persa. Valuta prima «Chiudi inventario».');
+  document.getElementById('inv-pulisci-txt').textContent=`Attenzione: vengono cancellate TUTTE le ${fmtNum(DATA.length)} righe dell'inventario (${fmtNum(t.forme)} forme, pegno compreso)${AF_DATA.length?` e le ${fmtNum(AF_DATA.length)} righe degli altri formaggi`:''}, per ripartire da una nuova conta. Gli inventari già chiusi nell'Archivio inventari restano. `+(u?`Ultimo inventario chiuso: «${u.nome}» (conta del ${invData(u.data_conta)}).`:'Non hai ancora chiuso nessun inventario: se prosegui, questa conta andrà persa. Valuta prima «Chiudi inventario».');
   document.getElementById('inv-chiudi').style.display='none';
   document.getElementById('inv-pulisci').style.display='';
 }
 async function invPulisciConferma(){
   const msg=document.getElementById('inv-msg');
   document.getElementById('inv-pulisci').style.display='none';
-  const {error}=await sb.from(TABLE).delete().not('id','is',null);
-  if(error){ msg.textContent='Cancellazione non riuscita: '+error.message; msg.className='msg err'; await loadData(); return; }
+  let {error}=await sb.from(TABLE).delete().not('id','is',null);
+  if(!error) ({error}=await sb.from(AF_TABLE).delete().not('id','is',null));
+  if(error){ msg.textContent='Cancellazione non riuscita: '+error.message; msg.className='msg err'; await loadData(); await loadAltriFormaggi(); return; }
   msg.textContent='Rilevazione cancellata: l\'inventario è vuoto, pronto per caricare la nuova conta.'; msg.className='msg ok';
-  await loadData();
+  await loadData(); await loadAltriFormaggi();
 }
 function renderInventari(){
   const box=document.getElementById('inv-lista'); if(!box) return;
@@ -2393,7 +2447,7 @@ function renderInventari(){
   box.innerHTML=INV_DATA.map(a=>{
     const t=invTot(a.righe), aperto=INV_APERTI.has(String(a.id));
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome)}</b><span class="arch-sub">Conta del ${invData(a.data_conta)}</span></div>
-      <div class="arch-tot">${fmtNum(a.righe.length)} righe · ${fmtNum(t.forme)} forme · ${fmtNum(t.pegno)} in pegno</div>
+      <div class="arch-tot">${fmtNum(a.righe.length)} righe · ${fmtNum(t.forme)} forme · ${fmtNum(t.pegno)} in pegno${(a.altri_formaggi||[]).length?` · ${fmtNum(a.altri_formaggi.length)} righe altri formaggi`:''}</div>
       <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
       ${aperto?`<div class="arch-det">${invDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
@@ -2419,7 +2473,15 @@ function invDettaglioHtml(a){
   const righe=invRighe(a), t=invTot(a.righe);
   return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
     righe.map(r=>`<tr><td>${r.scalera}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
-    `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`;
+    `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+invAltriHtml(a);
+}
+function invAltri(a){ return Array.isArray(a.altri_formaggi)?a.altri_formaggi:[]; }
+function invAltriHtml(a){
+  const al=invAltri(a); if(!al.length) return '';
+  const kg=v=>Number(v)?fmtKg(v):'—', som=k=>Math.round(al.reduce((t,r)=>t+(Number(r[k])||0),0)*100)/100;
+  return `<div class="bm-quant-t" style="margin-top:14px">Altri formaggi</div><div class="table-wrap"><table><thead><tr><th>Prodotto</th><th>Forme intere</th><th>Forme in kg</th>${AF_KG.map(q=>`<th>${q.t} kg</th>`).join('')}<th>Note</th></tr></thead><tbody>`+
+   al.map(r=>`<tr><td>${escapeHtml(r.prodotto)}</td><td>${Number(r.forme)?fmtNum(r.forme):'—'}</td><td>${kg(r.forme_kg)}</td>${AF_KG.map(q=>`<td>${kg(r[q.k])}</td>`).join('')}<td>${highlightNote(r.note||'')}</td></tr>`).join('')+
+   `<tr class="bm-tot"><td>Totale</td><td>${fmtNum(al.reduce((t,r)=>t+(Number(r.forme)||0),0))}</td><td>${fmtKg(som('forme_kg'))}</td>${AF_KG.map(q=>`<td>${fmtKg(som(q.k))}</td>`).join('')}<td></td></tr></tbody></table></div>`;
 }
 function invApri(id){ id=String(id); if(INV_APERTI.has(id)) INV_APERTI.delete(id); else INV_APERTI.add(id); renderInventari(); }
 async function invElimina(id){
@@ -2438,7 +2500,13 @@ function invExcel(id){
   try{
     if(!window.XLSX) throw new Error('libreria Excel non caricata');
     const ws=XLSX.utils.aoa_to_sheet([head,...body]); ws['!cols']=[{wch:9},{wch:10},{wch:11},{wch:14},{wch:8},{wch:12},{wch:24}];
-    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Inventario'); XLSX.writeFile(wb,nomeFile+'.xlsx');
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Inventario');
+    const al=invAltri(a);
+    if(al.length){ const h2=['Prodotto','Forme intere','Forme in kg',...AF_KG.map(q=>q.t+' kg'),'Note'];
+      const b2=al.map(r=>[r.prodotto,Number(r.forme)||0,Number(r.forme_kg)||0,...AF_KG.map(q=>Number(r[q.k])||0),r.note||'']);
+      b2.push(['Totale',al.reduce((t,r)=>t+(Number(r.forme)||0),0),...['forme_kg',...AF_KG.map(q=>q.k)].map(k=>Math.round(al.reduce((t,r)=>t+(Number(r[k])||0),0)*100)/100),'']);
+      const w2=XLSX.utils.aoa_to_sheet([h2,...b2]); w2['!cols']=[{wch:24},{wch:12},{wch:12},...AF_KG.map(()=>({wch:16})),{wch:24}]; XLSX.utils.book_append_sheet(wb,w2,'Altri formaggi'); }
+    XLSX.writeFile(wb,nomeFile+'.xlsx');
   }catch(e){
     const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
     const csv='﻿'+[head,...body].map(r=>r.map(esc).join(';')).join('\r\n');
@@ -2678,6 +2746,215 @@ async function bgCarica(tab){
   bgVai(tab,1,0);
 }
 ['bpr','bgp'].forEach(t=>{ bgAggiungi(t,10); let m='singolo'; try{ m=localStorage.getItem('magazzino_modo_'+t)||'singolo'; }catch(e){} bgModo(t,m,false); });
+
+// ====== MEDIA PESO PRODOTTI + ALTRI FORMAGGI
+const MP_TABLE='media_peso_prodotti', AF_TABLE='altri_formaggi';
+let MP_DATA=[], MP_ERRORE=null, AF_DATA=[], AF_ERRORE=null;
+const MP_EDIT={ id:null }, AF_EDIT={ id:null };
+const AF_KG=[
+  {id:'pf',k:'prodotto_finito_kg',t:'Prodotto finito'},
+  {id:'sl',k:'semilavorato_kg',t:'Semilavorato'},
+  {id:'po',k:'polpa_kg',t:'Polpa'},
+  {id:'pi',k:'piatti_kg',t:'Piatti'},
+  {id:'cr',k:'croste_kg',t:'Croste'},
+  {id:'br',k:'briciole_kg',t:'Briciole'}
+];
+const mpErrTxt=e=>{ const t=(e&&e.message)||String(e); return /media_peso|altri_formaggi|does not exist|schema cache/i.test(t)?t+' — esegui lo script SQL «altri-formaggi.sql» su Supabase.':t; };
+const mpKey=n=>String(n||'').trim().toUpperCase();
+const mpPeso=n=>{ const m=MP_DATA.find(x=>mpKey(x.prodotto)===mpKey(n)); return m?Number(m.peso_kg)||0:0; };
+const fmt3=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:3}).replace(/[,.]/g,c=>c===','?'.':',');
+
+async function loadMediaPeso(){
+  if(!sb) return;
+  try{ const {data,error}=await sb.from(MP_TABLE).select('*').order('prodotto',{ascending:true}); if(error) throw error; MP_DATA=data||[]; MP_ERRORE=null; }
+  catch(e){ MP_ERRORE=(e&&e.message)?e.message:String(e); }
+  renderMediaPeso(); afElencoProdotti(); afAggiornaKg();
+}
+async function loadAltriFormaggi(){
+  if(!sb) return;
+  try{ const {data,error}=await sb.from(AF_TABLE).select('*').order('created_at',{ascending:true}); if(error) throw error; AF_DATA=data||[]; AF_ERRORE=null; }
+  catch(e){ AF_ERRORE=(e&&e.message)?e.message:String(e); }
+  renderAltriFormaggi();
+}
+function mpSort(key,col){ sortToggle(key,col,{col:'prodotto',dir:1}); renderMediaPeso(); }
+function renderMediaPeso(){
+  const tb=document.getElementById('mp-body'); if(!tb) return;
+  const th=(l,c)=>sortTh(l,'mp',c,'mpSort',{col:'prodotto',dir:1});
+  document.getElementById('mp-head').innerHTML=`<tr>${th('Prodotto','prodotto')}${th('Media peso (kg)','peso_kg')}${th('Note','note')}<th></th></tr>`;
+  if(MP_ERRORE){ tb.innerHTML=`<tr><td colspan="4" class="empty">Non riesco a leggere i prodotti: ${escapeHtml(mpErrTxt({message:MP_ERRORE}))}</td></tr>`; document.getElementById('mp-count').textContent=''; return; }
+  const st=TAB_SORT['mp']||{col:'prodotto',dir:1};
+  const rows=[...MP_DATA].sort((a,b)=>(st.col==='peso_kg'?(Number(a.peso_kg)-Number(b.peso_kg)):cmpTxt(a[st.col],b[st.col]))*st.dir);
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="4" class="empty">Nessun prodotto inserito.</td></tr>'; document.getElementById('mp-count').textContent=''; return; }
+  tb.innerHTML=rows.map(r=>MP_EDIT.id===r.id
+    ? `<tr class="editing-row"><td><input id="mp-e-prodotto" type="text" value="${escapeHtml(r.prodotto)}" autocapitalize="characters"></td><td><input id="mp-e-peso" class="calc calc-kg calc-kg3" type="text" value="${String(r.peso_kg).replace('.',',')}"></td><td><input id="mp-e-note" type="text" value="${escapeHtml(r.note||'')}"></td><td class="row-actions"><button class="edit-btn" onclick="mpSalvaModifica('${r.id}')" title="Salva">💾</button><button class="del-btn" onclick="MP_EDIT.id=null;renderMediaPeso()" title="Annulla">✕</button></td></tr>`
+    : `<tr><td>${escapeHtml(r.prodotto)}</td><td>${fmt3(r.peso_kg)}</td><td>${highlightNote(r.note||'')}</td><td class="row-actions"><button class="edit-btn" onclick="MP_EDIT.id='${r.id}';renderMediaPeso()" title="Modifica">✏️</button><button class="del-btn" onclick="mpElimina('${r.id}')" title="Elimina">✕</button></td></tr>`).join('');
+  document.getElementById('mp-count').textContent=`${rows.length} ${rows.length===1?'prodotto':'prodotti'}`;
+  if(MP_EDIT.id){ attachUppercase('mp-e-prodotto'); }
+}
+async function mpAggiungi(){
+  const msg=document.getElementById('mp-msg');
+  const prodotto=mpKey(document.getElementById('mp-prodotto').value);
+  const peso=calcKg(document.getElementById('mp-peso').value,3);
+  if(!prodotto){ msg.textContent='Inserisci il nome del prodotto.'; msg.className='msg err'; return; }
+  if(Number.isNaN(peso)||peso<=0){ msg.textContent='Inserisci una media peso valida (kg, anche con la virgola).'; msg.className='msg err'; return; }
+  if(MP_DATA.some(x=>mpKey(x.prodotto)===prodotto)){ msg.textContent=`«${prodotto}» è già presente: modificalo dalla tabella.`; msg.className='msg err'; return; }
+  const {error}=await sb.from(MP_TABLE).insert({prodotto,peso_kg:peso,note:up(document.getElementById('mp-note').value.trim())});
+  if(error){ msg.textContent='Salvataggio non riuscito: '+mpErrTxt(error); msg.className='msg err'; return; }
+  msg.textContent=`Aggiunto: ${prodotto}, ${fmt3(peso)} kg a forma.`; msg.className='msg ok';
+  ['mp-prodotto','mp-peso','mp-note'].forEach(i=>document.getElementById(i).value='');
+  await loadMediaPeso(); document.getElementById('mp-prodotto').focus();
+}
+async function mpSalvaModifica(id){
+  const prodotto=mpKey(document.getElementById('mp-e-prodotto').value);
+  const peso=calcKg(document.getElementById('mp-e-peso').value,3);
+  if(!prodotto){ alert('Inserisci il nome del prodotto.'); return; }
+  if(Number.isNaN(peso)||peso<=0){ alert('Inserisci una media peso valida.'); return; }
+  if(MP_DATA.some(x=>x.id!==id && mpKey(x.prodotto)===prodotto)){ alert(`«${prodotto}» è già presente.`); return; }
+  const {error}=await sb.from(MP_TABLE).update({prodotto,peso_kg:peso,note:up(document.getElementById('mp-e-note').value.trim())}).eq('id',id);
+  if(error){ alert('Modifica non riuscita: '+mpErrTxt(error)); return; }
+  MP_EDIT.id=null; await loadMediaPeso();
+}
+async function mpElimina(id){
+  const m=MP_DATA.find(x=>x.id===id); if(!m) return;
+  if(!confirm(`Eliminare «${m.prodotto}» dalla media peso? I caricamenti già fatti restano com'erano.`)) return;
+  const {error}=await sb.from(MP_TABLE).delete().eq('id',id);
+  if(error){ alert('Eliminazione non riuscita: '+error.message); return; }
+  await loadMediaPeso();
+}
+['mp-prodotto','mp-peso','mp-note'].forEach(i=>{ const el=document.getElementById(i); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); mpAggiungi(); } }); });
+attachUppercase('mp-prodotto'); attachUppercase('mp-note');
+
+// --- caricamento altri formaggi (tabella a righe)
+const AF_COLS=['pr','fo','pf','sl','po','pi','cr','br','no'];   // celle modificabili in ordine
+let AF_N=0;
+const afId=(i,c)=>`af${i}-${c}`;
+function afElencoProdotti(){ const dl=document.getElementById('af-prod-list'); if(dl) dl.innerHTML=[...MP_DATA].sort((a,b)=>cmpTxt(a.prodotto,b.prodotto)).map(m=>`<option value="${escapeHtml(m.prodotto)}">`).join(''); }
+function afAggiungi(n){
+  const tb=document.getElementById('af-body');
+  for(let k=0;k<n;k++){
+    const i=++AF_N;
+    const tr=document.createElement('tr'); tr.dataset.r=i;
+    tr.innerHTML=`<td>${i}</td>
+      <td><input id="${afId(i,'pr')}" type="text" autocomplete="off" autocapitalize="characters" list="af-prod-list"></td>
+      <td><input id="${afId(i,'fo')}" class="calc" type="text" autocomplete="off" placeholder="0"></td>
+      <td><input id="${afId(i,'fk')}" type="text" readonly tabindex="-1" placeholder="kg"></td>
+      ${AF_KG.map(q=>`<td><input id="${afId(i,q.id)}" class="calc calc-kg" type="text" autocomplete="off" placeholder="0"></td>`).join('')}
+      <td><input id="${afId(i,'no')}" type="text" autocomplete="off"></td>
+      <td><button class="del-btn" type="button" tabindex="-1" onclick="afRimuovi(${i})" title="Svuota la riga">✕</button></td>`;
+    tb.appendChild(tr);
+    attachUppercase(afId(i,'pr')); attachUppercase(afId(i,'no'));
+    AF_COLS.forEach((c,ci)=>{
+      const el=document.getElementById(afId(i,c));
+      el.addEventListener('input',()=>{ el.classList.remove('gx-err'); if(c==='pr'||c==='fo') afKgRiga(i); });
+      el.addEventListener('change',()=>{ if(c==='pr') afKgRiga(i); });
+      el.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){ e.preventDefault(); if(e.ctrlKey||e.metaKey){ afCarica(); return; } afVai(e.shiftKey?i-1:i+1,ci); }
+      });
+      el.addEventListener('blur',()=>{ if(c==='fo') afKgRiga(i); });
+    });
+  }
+}
+function afVai(i,ci){ if(i>AF_N) afAggiungi(1); if(i<1) return; const el=document.getElementById(afId(i,AF_COLS[ci])); if(el){ el.focus(); el.select(); } }
+function afKgRiga(i){
+  const out=document.getElementById(afId(i,'fk')); if(!out) return;
+  const pr=document.getElementById(afId(i,'pr')).value, fo=document.getElementById(afId(i,'fo')).value.trim();
+  out.title=''; out.classList.remove('gx-err');
+  if(fo===''){ out.value=''; return; }
+  const n=calcForme(/^\d{1,3}(\.\d{3})+$/.test(fo)?fo.replace(/\./g,''):fo);
+  if(Number.isNaN(n)){ out.value=''; return; }
+  const peso=mpPeso(pr);
+  if(!peso){ out.value=''; out.placeholder=pr.trim()?'manca peso':'kg'; out.title='Prodotto senza media peso: inseriscilo nella pagina Media peso prodotti'; return; }
+  out.value=fmtKg(Math.round(n*peso*100)/100); out.title=`${fmtNum(n)} forme × ${fmt3(peso)} kg`;
+}
+function afAggiornaKg(){ for(let i=1;i<=AF_N;i++) afKgRiga(i); }
+function afRimuovi(i){ [...AF_COLS,'fk'].forEach(c=>{ const el=document.getElementById(afId(i,c)); el.value=''; el.classList.remove('gx-err'); }); }
+function afSvuota(){ document.getElementById('af-body').innerHTML=''; AF_N=0; afAggiungi(1); document.getElementById('af-msg').textContent=''; afVai(1,0); }
+const afPiena=i=>AF_COLS.some(c=>document.getElementById(afId(i,c)).value.trim()!=='');
+function afLeggiRiga(pre){   // pre: funzione id->elemento; restituisce {errore} oppure l'oggetto da salvare
+  const el=c=>document.getElementById(pre(c)); const v=c=>el(c).value.trim();
+  const prodotto=mpKey(v('pr')); if(!prodotto) return {errore:'prodotto mancante',cella:'pr'};
+  let forme=0; if(v('fo')!==''){ forme=calcForme(/^\d{1,3}(\.\d{3})+$/.test(v('fo'))?v('fo').replace(/\./g,''):v('fo')); if(Number.isNaN(forme)||forme<0) return {errore:'numero di forme non valido',cella:'fo'}; }
+  const out={prodotto,forme,note:up(v('no'))};
+  for(const q of AF_KG){ let x=0; if(v(q.id)!==''){ x=calcKg(v(q.id)); if(Number.isNaN(x)||x<0) return {errore:`${q.t.toLowerCase()}: valore non valido`,cella:q.id}; } out[q.k]=x; }
+  const peso=mpPeso(prodotto);
+  if(forme>0 && !peso) return {errore:`manca la media peso di «${prodotto}» (pagina Media peso prodotti)`,cella:'pr'};
+  out.peso_medio_kg=forme>0?peso:0; out.forme_kg=forme>0?Math.round(forme*peso*100)/100:0;
+  if(!forme && !AF_KG.some(q=>out[q.k])) return {errore:'inserisci almeno un valore',cella:'fo'};
+  return out;
+}
+async function afCarica(){
+  const msg=document.getElementById('af-msg'); const righe=[], errori=[];
+  for(let i=1;i<=AF_N;i++){
+    if(!afPiena(i)) continue;
+    AF_COLS.forEach(c=>document.getElementById(afId(i,c)).classList.remove('gx-err'));
+    const d=afLeggiRiga(c=>afId(i,c));
+    if(d.errore){ document.getElementById(afId(i,d.cella)).classList.add('gx-err'); errori.push(`Riga ${i}: ${d.errore}`); } else righe.push(d);
+  }
+  if(errori.length){ msg.textContent=errori.slice(0,3).join(' · ')+(errori.length>3?` · … (altri ${errori.length-3})`:'')+' — nessuna riga è stata caricata.'; msg.className='msg err'; return; }
+  if(!righe.length){ msg.textContent='Non ci sono righe da caricare.'; msg.className='msg err'; return; }
+  const btn=document.getElementById('af-submit'); btn.disabled=true;
+  const {error}=await sb.from(AF_TABLE).insert(righe);
+  btn.disabled=false;
+  if(error){ msg.textContent='Salvataggio non riuscito: '+mpErrTxt(error); msg.className='msg err'; return; }
+  msg.textContent=`Caricate ${righe.length} ${righe.length===1?'riga':'righe'} di altri formaggi.`; msg.className='msg ok';
+  document.getElementById('af-body').innerHTML=''; AF_N=0; afAggiungi(1);
+  await loadAltriFormaggi(); afVai(1,0);
+}
+
+// --- riepilogo altri formaggi
+function afSort(key,col){ sortToggle(key,col,null); renderAltriFormaggi(); }
+const AF_RCOL=[['prodotto','Prodotto'],['forme','Forme intere'],['forme_kg','Forme in kg'],...AF_KG.map(q=>[q.k,q.t+' kg']),['note','Note']];
+function renderAltriFormaggi(){
+  const tb=document.getElementById('af-rbody'); if(!tb) return;
+  document.getElementById('af-rhead').innerHTML='<tr>'+AF_RCOL.map(([c,l])=>sortTh(l,'af',c,'afSort',null)).join('')+'<th></th></tr>';
+  const cnt=document.getElementById('af-count'), cols=AF_RCOL.length+1;
+  if(AF_ERRORE){ tb.innerHTML=`<tr><td colspan="${cols}" class="empty">Non riesco a leggere gli altri formaggi: ${escapeHtml(mpErrTxt({message:AF_ERRORE}))}</td></tr>`; cnt.textContent=''; return; }
+  const st=TAB_SORT['af'];
+  const rows=[...AF_DATA];
+  if(st&&st.col) rows.sort((a,b)=>(st.col==='prodotto'||st.col==='note'?cmpTxt(a[st.col],b[st.col]):(Number(a[st.col])||0)-(Number(b[st.col])||0))*st.dir);
+  if(!rows.length){ tb.innerHTML=`<tr><td colspan="${cols}" class="empty">Nessun caricamento.</td></tr>`; cnt.textContent=''; return; }
+  const kg=v=>Number(v)?fmtKg(v):'—';
+  tb.innerHTML=rows.map(r=>AF_EDIT.id===r.id
+    ? `<tr class="editing-row"><td><input id="afe-pr" type="text" value="${escapeHtml(r.prodotto)}" list="af-prod-list" autocapitalize="characters"></td><td><input id="afe-fo" class="calc" type="text" value="${r.forme||''}" placeholder="0"></td><td>${Number(r.forme_kg)?fmtKg(r.forme_kg):'—'}</td>${AF_KG.map(q=>`<td><input id="afe-${q.id}" class="calc calc-kg" type="text" value="${Number(r[q.k])?String(r[q.k]).replace('.',','):''}" placeholder="0"></td>`).join('')}<td><input id="afe-no" type="text" value="${escapeHtml(r.note||'')}"></td><td class="row-actions"><button class="edit-btn" onclick="afSalvaModifica('${r.id}')" title="Salva">💾</button><button class="del-btn" onclick="AF_EDIT.id=null;renderAltriFormaggi()" title="Annulla">✕</button></td></tr>`
+    : `<tr><td>${escapeHtml(r.prodotto)}</td><td>${Number(r.forme)?fmtNum(r.forme):'—'}</td><td title="${Number(r.peso_medio_kg)?'peso medio '+fmt3(r.peso_medio_kg)+' kg':''}">${kg(r.forme_kg)}</td>${AF_KG.map(q=>`<td class="bm-q">${kg(r[q.k])}</td>`).join('')}<td>${highlightNote(r.note||'')}</td><td class="row-actions"><button class="edit-btn" onclick="AF_EDIT.id='${r.id}';renderAltriFormaggi()" title="Modifica riga">✏️</button><button class="del-btn" onclick="afElimina('${r.id}')" title="Elimina riga">✕</button></td></tr>`).join('')
+    +`<tr class="bm-tot"><td>Totale</td><td>${fmtNum(rows.reduce((t,r)=>t+(Number(r.forme)||0),0))}</td><td>${fmtKg(Math.round(rows.reduce((t,r)=>t+(Number(r.forme_kg)||0),0)*100)/100)}</td>${AF_KG.map(q=>`<td class="bm-q">${fmtKg(Math.round(rows.reduce((t,r)=>t+(Number(r[q.k])||0),0)*100)/100)}</td>`).join('')}<td></td><td></td></tr>`;
+  cnt.textContent=`${rows.length} ${rows.length===1?'riga':'righe'}`;
+  if(AF_EDIT.id) attachUppercase('afe-pr');
+}
+async function afSalvaModifica(id){
+  const old=AF_DATA.find(x=>x.id===id); if(!old) return;
+  const d=afLeggiRiga(c=>'afe-'+c);
+  if(d.errore){ alert('Riga non valida: '+d.errore); return; }
+  // se il prodotto e le forme non sono cambiati, resta il peso già usato
+  if(mpKey(old.prodotto)===d.prodotto && Number(old.forme)===d.forme && Number(old.peso_medio_kg)){ d.peso_medio_kg=Number(old.peso_medio_kg); d.forme_kg=Math.round(d.forme*d.peso_medio_kg*100)/100; }
+  const {error}=await sb.from(AF_TABLE).update(d).eq('id',id);
+  if(error){ alert('Modifica non riuscita: '+mpErrTxt(error)); return; }
+  AF_EDIT.id=null; await loadAltriFormaggi();
+}
+async function afElimina(id){
+  const {error}=await sb.from(AF_TABLE).delete().eq('id',id);
+  if(error){ alert('Eliminazione non riuscita: '+error.message); return; }
+  await loadAltriFormaggi();
+}
+function afExcel(){
+  if(!AF_DATA.length){ alert('Nessuna riga da esportare.'); return; }
+  const head=['Prodotto','Forme intere','Forme in kg',...AF_KG.map(q=>q.t+' kg'),'Note'];
+  const body=AF_DATA.map(r=>[r.prodotto,Number(r.forme)||'',Number(r.forme_kg)||'',...AF_KG.map(q=>Number(r[q.k])||''),r.note||'']);
+  const sum=k=>Math.round(AF_DATA.reduce((t,r)=>t+(Number(r[k])||0),0)*100)/100||'';
+  body.push(['Totale',sum('forme'),sum('forme_kg'),...AF_KG.map(q=>sum(q.k)),'']);
+  const nomeFile='altri-formaggi-'+new Date().toISOString().slice(0,10);
+  try{
+    if(!window.XLSX) throw new Error('libreria Excel non caricata');
+    const ws=XLSX.utils.aoa_to_sheet([head,...body]); ws['!cols']=[{wch:22},{wch:12},{wch:12},...AF_KG.map(()=>({wch:16})),{wch:24}];
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Altri formaggi'); XLSX.writeFile(wb,nomeFile+'.xlsx');
+  }catch(e){
+    const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const csv='﻿'+[head,...body].map(r=>r.map(esc).join(';')).join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); a.download=nomeFile+'.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+}
+afAggiungi(1);
 
 // Passaggio automatico alla cella successiva: matricola completa -> produzione -> forme
 const BM_LUNG_MATRICOLA={ bgp:5 };   // GP: 5 caratteri (es. BG508); PR ha matricole di 3 o 4 cifre

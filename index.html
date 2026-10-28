@@ -264,9 +264,19 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
   .table-wrap{border:none;}
   th,td{white-space:normal;}
 }
+#print-area{display:none;}
+@media print{
+  body.print-gen .app,body.print-gen .overlay{display:none !important;}
+  body.print-gen #print-area{display:block;color:#000;}
+  #print-area h2{margin:0 0 4px;font-size:15pt;} #print-area .pa-sub{margin:0 0 12px;color:#444;font-size:10pt;}
+  #print-area h4{margin:14px 0 6px;font-size:11pt;} #print-area table{width:100%;border-collapse:collapse;font-size:10pt;} #print-area th,#print-area td{border-bottom:1px solid #bbb;padding:4px 6px;text-align:left;} #print-area .arrow{display:none;}
+  #print-area .bm-tot td{font-weight:700;border-top:2px solid #000;} #print-area tr{break-inside:avoid;} #print-area .table-wrap{overflow:visible;border:none;} #print-area .bm-n{display:none;}
+  @page{size:A4 landscape;margin:10mm}
+}
 </style>
 </head>
 <body>
+<div id="print-area"></div>
 <div class="overlay" id="login-overlay">
   <form class="login-card" onsubmit="doLogin(event)">
     <h2>Gestione Magazzino</h2>
@@ -579,7 +589,7 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
     </div>
 
     <h3>Riepilogo altri formaggi</h3>
-    <div class="table-toolbar bm-actions" style="margin-top:8px;"><button class="print-btn" onclick="afExcel()">📊 Scarica Excel</button></div>
+    <div class="table-toolbar bm-actions" style="margin-top:8px;"><button class="print-btn" onclick="afExcel()">📊 Scarica Excel</button> <button class="print-btn" onclick="afStampa()" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button></div>
     <div class="table-wrap" style="margin-top:8px;"><table class="af-r">
       <thead id="af-rhead"></thead>
       <tbody id="af-rbody"></tbody>
@@ -2336,9 +2346,24 @@ function renderArchivio(){
     const extra=BMQ.filter(q=>t.q[q.id]).map(q=>`${q.t.replace(' (kg)','')} ${fmtKg(t.q[q.id])} kg`).join(' · ');
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome||'Bilancio')}</b><span class="arch-sub">${a.tipo==='PR'?'Parmigiano Reggiano':'Grana Padano'} · chiuso il ${bmqData(a.chiuso_il)}</span></div>
       <div class="arch-tot">${fmtNum(t.forme)} forme${extra?' · '+extra:''}</div>
-      <div class="arch-act"><button class="print-btn" onclick="archApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="archExcel('${a.id}')">📊 Excel</button><button class="del-btn" onclick="archElimina('${a.id}')" title="Elimina dall'archivio">✕</button></div></div>
+      <div class="arch-act"><button class="print-btn" onclick="archApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="archExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="archStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="del-btn" onclick="archElimina('${a.id}')" title="Elimina dall'archivio">✕</button></div></div>
       ${aperto?`<div class="arch-det">${archDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
+}
+function stampaDoc(titolo,sub,html){
+  const pa=document.getElementById('print-area');
+  pa.innerHTML=`<h2>${escapeHtml(titolo)}</h2><p class="pa-sub">${escapeHtml(sub)} · stampato il ${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}</p>${html}`;
+  const pulisci=()=>{ document.body.classList.remove('print-gen'); pa.innerHTML=''; window.removeEventListener('afterprint',pulisci); };
+  window.addEventListener('afterprint',pulisci);
+  document.body.classList.add('print-gen'); window.print();
+}
+function archStampa(id){ const a=ARCH_DATA.find(x=>String(x.id)===String(id)); if(!a) return; stampaDoc(a.nome||'Bilancio',(a.tipo==='PR'?'Parmigiano Reggiano':'Grana Padano')+' · chiuso il '+bmqData(a.chiuso_il),archDettaglioHtml(a)); }
+function invStampa(id){ const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return; stampaDoc(a.nome,'Conta del '+invData(a.data_conta),invDettaglioHtml(a)); }
+function afStampa(){
+  if(!AF_DATA.length){ alert('Nessuna riga da stampare.'); return; }
+  const t=document.querySelector('table.af-r').cloneNode(true);
+  t.querySelectorAll('tr').forEach(r=>{ if(r.lastElementChild) r.lastElementChild.remove(); });
+  stampaDoc('Altri formaggi','Riepilogo',t.outerHTML);
 }
 function archApri(id){ id=String(id); if(ARCH_APERTI.has(id)) ARCH_APERTI.delete(id); else ARCH_APERTI.add(id); renderArchivio(); }
 async function archElimina(id){
@@ -2448,7 +2473,7 @@ function renderInventari(){
     const t=invTot(a.righe), aperto=INV_APERTI.has(String(a.id));
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome)}</b><span class="arch-sub">Conta del ${invData(a.data_conta)}</span></div>
       <div class="arch-tot">${fmtNum(a.righe.length)} righe · ${fmtNum(t.forme)} forme · ${fmtNum(t.pegno)} in pegno${(a.altri_formaggi||[]).length?` · ${fmtNum(a.altri_formaggi.length)} righe altri formaggi`:''}</div>
-      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
+      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
       ${aperto?`<div class="arch-det">${invDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
 }

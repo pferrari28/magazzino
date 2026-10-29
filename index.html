@@ -273,6 +273,59 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
   #print-area .bm-tot td{font-weight:700;border-top:2px solid #000;} #print-area tr{break-inside:avoid;} #print-area .table-wrap{overflow:visible;border:none;} #print-area .bm-n{display:none;}
   @page{size:A4 landscape;margin:10mm}
 }
+
+/* ===== Versione telefono (Nuovo inventario) ===== */
+.tel-btn{border:1px dashed rgba(255,255,255,.35) !important;margin-bottom:6px;}
+.tel{position:fixed;inset:0;z-index:90;background:var(--bg);display:none;flex-direction:column;font-size:16px;}
+body.tel-on .tel{display:flex;}
+body.tel-on{overflow:hidden;}
+.tel-top{background:var(--side);color:#fff;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.tel-top b{font-size:1.15rem;display:block;}.tel-top>span{white-space:nowrap;}.tel-top span{font-size:.8rem;opacity:.75;}
+.tel-pill{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:16px;padding:8px 12px;font:inherit;font-size:.85rem;cursor:pointer;}
+.tel-body{flex:1;overflow-y:auto;padding:12px 14px 20px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;}
+.tel-card{background:var(--panel);border-radius:12px;padding:10px 14px;}
+.tel-lab{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;justify-content:space-between;}
+.tel-row{display:flex;gap:10px;}.tel-row>.tel-card{flex:1;min-width:0;}
+.tel input.tel-in{width:100%;border:0;background:transparent;font:inherit;font-size:1.45rem;font-weight:700;color:var(--ink);padding:2px 0;outline:none;}
+.tel input.tel-in::placeholder{color:var(--line);font-weight:600;}
+.tel input.tel-note{font-size:1.05rem;font-weight:500;}
+.tel-pick{display:flex;justify-content:space-between;align-items:baseline;font-size:1.45rem;font-weight:700;cursor:pointer;min-height:34px;}
+.tel-pick i{font-style:normal;font-size:.85rem;font-weight:500;color:var(--muted);}
+.tel-pick.vuoto{color:var(--line);}
+.tel-step{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.tel-sb{width:60px;height:56px;border-radius:14px;border:0;background:var(--green-dark);color:#fff;font-size:2rem;font-weight:600;cursor:pointer;touch-action:manipulation;}
+.tel-num{font-size:2.5rem;font-weight:700;min-width:90px;text-align:center;cursor:pointer;}
+.tel-quick{display:flex;gap:8px;margin-top:8px;}
+.tel-quick button{flex:1;padding:10px 0;border-radius:10px;border:0;background:var(--head);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;}
+.tel-chips{display:flex;flex-wrap:wrap;gap:7px;}
+.tel-chip{padding:9px 13px;border-radius:20px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:.95rem;cursor:pointer;}
+.tel-chip.on{background:var(--side);border-color:var(--side);color:#fff;}
+.tel-foot{padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;background:var(--bg);border-top:1px solid var(--line);}
+.tel-cta{flex:1;border:0;border-radius:14px;background:var(--side);color:#fff;font:inherit;font-size:1.15rem;font-weight:700;padding:16px;cursor:pointer;}
+.tel-cta.ghost{flex:0 0 auto;background:transparent;color:var(--ink);border:2px solid var(--line);}
+.tel-cta.del{flex:0 0 auto;background:transparent;color:var(--danger);border:2px solid var(--danger);}
+.tel-cta:disabled{opacity:.5;}
+.tel-msg{border-radius:12px;padding:11px 14px;font-weight:600;display:none;}
+.tel-msg.ok{display:block;background:#2E7D4F;color:#fff;}.tel-msg.err{display:block;background:var(--danger);color:#fff;}
+.tel-li{background:var(--panel);border-radius:12px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.tel-li.sel{outline:2px solid var(--amber);}
+.tel-li b{font-size:1rem;}.tel-li small{display:block;color:var(--muted);font-size:.82rem;}.tel-li .f{font-size:1.35rem;font-weight:700;}
+.tel-tot{display:flex;justify-content:space-between;font-weight:700;padding:2px 4px;}
+.tel-vuota{color:var(--muted);font-size:.9rem;padding:4px;}
+.tel-sheet{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.45);display:none;align-items:flex-end;}
+.tel-sheet.show{display:flex;}
+.tel-sheet-in{background:var(--bg);width:100%;border-radius:18px 18px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;max-height:92vh;overflow-y:auto;}
+.tel-sheet-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:1.1rem;}
+.tel-sheet-h button{border:0;background:var(--head);color:var(--ink);border-radius:14px;padding:7px 12px;font:inherit;cursor:pointer;}
+.tel-grid{display:grid;gap:7px;}
+.tel-grid button{border:0;border-radius:11px;background:var(--panel);color:var(--ink);font:inherit;font-weight:600;font-size:1.05rem;padding:12px 0;cursor:pointer;touch-action:manipulation;}
+.tel-grid button.on{background:var(--side);color:#fff;}
+.tel-grid button.anno.on{background:var(--amber);color:#17212B;}
+.tel-grid button.k2{background:var(--head);}
+.tel-pad button{font-size:1.6rem;padding:14px 0;}
+.tel-disp{background:var(--panel);border-radius:12px;padding:8px 14px;display:flex;justify-content:space-between;align-items:baseline;}
+.tel-disp b{font-size:2.2rem;}.tel-disp span{color:var(--muted);}
+@media (min-width:700px){ .tel-body,.tel-foot{max-width:520px;width:100%;margin-left:auto;margin-right:auto;} .tel-sheet-in{max-width:520px;margin:0 auto;} }
 </style>
 </head>
 <body>
@@ -288,6 +341,32 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
   </form>
 </div>
 
+
+<div class="tel" id="tel">
+  <div class="tel-top">
+    <div><b>Nuovo inventario</b><span>Versione telefono · <span id="tel-sync">—</span></span></div>
+    <span><button class="tel-pill" type="button" onclick="telAggiorna()">↻</button> <button class="tel-pill" type="button" onclick="telChiudi()">🖥️ PC</button></span>
+  </div>
+  <div class="tel-body" id="tel-body">
+    <div class="tel-msg" id="tel-msg"></div>
+    <div class="tel-row">
+      <div class="tel-card"><div class="tel-lab">Scalera</div><input class="tel-in" id="tel-sc" type="text" inputmode="numeric" autocomplete="off" list="tel-sc-list" placeholder="—"></div>
+      <div class="tel-card"><div class="tel-lab">Matricola</div><input class="tel-in" id="tel-ma" type="text" autocomplete="off" autocapitalize="characters" list="gx-mat-list" placeholder="—"></div>
+    </div>
+    <datalist id="tel-sc-list"></datalist>
+    <div class="tel-card" onclick="telMeseApri()"><div class="tel-lab">Produzione</div><div class="tel-pick vuoto" id="tel-me">tocca per scegliere</div></div>
+    <div class="tel-card"><div class="tel-lab">Forme</div>
+      <div class="tel-step"><button class="tel-sb" type="button" onclick="telForme(-1)">−</button><div class="tel-num" id="tel-fo" onclick="telPadApri()">0</div><button class="tel-sb" type="button" onclick="telForme(1)">+</button></div>
+      <div class="tel-quick"><button type="button" onclick="telForme(5)">+5</button><button type="button" onclick="telForme(10)">+10</button><button type="button" onclick="telForme(-5)">−5</button><button type="button" onclick="telPadApri()" title="Tastierino">⌨︎</button></div>
+    </div>
+    <div class="tel-card"><div class="tel-lab">Tipologia</div><div class="tel-chips" id="tel-tip"></div></div>
+    <div class="tel-card"><div class="tel-lab">Note</div><div class="tel-chips" id="tel-banche" style="margin-bottom:6px;display:none"></div><input class="tel-in tel-note" id="tel-no" type="text" autocomplete="off" autocapitalize="characters" placeholder="facoltative"></div>
+    <div class="tel-lab" style="margin:6px 4px 0" id="tel-ult-t">Ultime righe</div>
+    <div id="tel-ult"></div>
+  </div>
+  <div class="tel-foot" id="tel-foot"></div>
+</div>
+<div class="tel-sheet" id="tel-sheet" onclick="if(event.target===this)telSheetChiudi()"><div class="tel-sheet-in" id="tel-sheet-in"></div></div>
 <div class="app">
   <aside class="side">
     <div>
@@ -295,6 +374,7 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
       <p class="sub">Forme in stagionatura</p>
     </div>
     <nav class="tabs">
+      <button class="tab-btn tel-btn" type="button" onclick="telApri()">📱 Versione telefono</button>
       <div class="tabs-sep">Inventari</div>
       <button class="tab-btn" data-tab="nuovo">Nuovo inventario</button>
       <button class="tab-btn" data-tab="inv">Archivio inventari</button>
@@ -816,6 +896,7 @@ async function loadData(){
     }
     DATA=all;
     refreshAll();
+    if(document.body.classList.contains('tel-on')) telPrepara();
     loadBilancio();
     setStatus('Dati aggiornati alle '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
     return true;
@@ -945,7 +1026,7 @@ function switchTab(tab){
   if(tab==='mp') renderMediaPeso();
   if(tab==='nuovo') afAggiornaKg();
 }
-document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+document.querySelectorAll('.tab-btn[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
 // Stagionatura: mesi compiuti. Un mese si considera compiuto al termine del mese stesso
 // (produzione set-2024 -> 24 mesi il 1 ottobre 2026).
@@ -3017,6 +3098,148 @@ window.addEventListener('scroll', ()=>{
   if(window.scrollY>300) btn.classList.add('show');
   else btn.classList.remove('show');
 });
+
+// ====== VERSIONE TELEFONO (registrazione Nuovo inventario con tasti grandi)
+const TEL={ forme:0, mese:null, tip:'', edit:null, anno:null, pad:'' };
+const TEL_BANCHE=['CREDEM','AGRICOLE'];
+function telIdx(){ try{ return localStorage.getItem('magazzino_telefono'); }catch(e){ return null; } }
+function telSalvaPref(v){ try{ localStorage.setItem('magazzino_telefono',v); }catch(e){} }
+function telApri(){ document.body.classList.add('tel-on'); telSalvaPref('1'); telPrepara(); }
+function telChiudi(){ document.body.classList.remove('tel-on'); telSalvaPref('0'); }
+function telPrepara(){
+  try{ gxElencoMatricole(); }catch(e){}
+  const sc=[...new Set(DATA.map(r=>r.scalera).filter(x=>x!==null&&x!==''))].sort((a,b)=>a-b);
+  document.getElementById('tel-sc-list').innerHTML=sc.map(x=>`<option value="${escapeHtml(String(x))}">`).join('');
+  telTipRender(); telForme(0); telMeseRender(); telFoot(); telUltime();
+  const st=document.getElementById('sync-status'); document.getElementById('tel-sync').textContent=st?st.textContent.replace('Dati aggiornati alle','agg.'):'';
+}
+async function telAggiorna(){ await loadData(); telPrepara(); }
+function telTipologie(){
+  const base=['PEGNO',...new Set(DATA.map(r=>up(r.tipologia)).filter(Boolean))];
+  return [...new Set(base)].sort((a,b)=>a==='PEGNO'?-1:b==='PEGNO'?1:a.localeCompare(b));
+}
+function telTipRender(){
+  const el=document.getElementById('tel-tip');
+  const lista=telTipologie(); if(TEL.tip && !lista.includes(TEL.tip)) lista.push(TEL.tip);
+  el.innerHTML=`<button type="button" class="tel-chip ${TEL.tip===''?'on':''}" data-t="">Normale</button>`+
+    lista.map(t=>`<button type="button" class="tel-chip ${TEL.tip===t?'on':''}" data-t="${escapeHtml(t)}">${escapeHtml(t.charAt(0)+t.slice(1).toLowerCase())}</button>`).join('')+
+    `<button type="button" class="tel-chip" data-t="__altro">+ Altra…</button>`;
+  el.querySelectorAll('.tel-chip').forEach(b=>b.onclick=()=>{
+    let t=b.dataset.t;
+    if(t==='__altro'){ t=up(prompt('Nuova tipologia:')||'').trim(); if(!t) return; }
+    TEL.tip=t; telTipRender();
+  });
+  const bk=document.getElementById('tel-banche');
+  bk.style.display=TEL.tip==='PEGNO'?'flex':'none';
+  bk.innerHTML=TEL_BANCHE.map(b=>`<button type="button" class="tel-chip" onclick="document.getElementById('tel-no').value='${b}'">${b}</button>`).join('');
+}
+function telForme(d){
+  TEL.forme=Math.max(0,(TEL.forme||0)+d);
+  document.getElementById('tel-fo').textContent=fmtNum(TEL.forme);
+}
+function telMeseRender(){
+  const el=document.getElementById('tel-me');
+  if(!TEL.mese){ el.className='tel-pick vuoto'; el.innerHTML='tocca per scegliere'; return; }
+  const n=stagionatura(TEL.mese);
+  el.className='tel-pick'; el.innerHTML=`${fmtMeseCorto(TEL.mese)} <i>${n} mesi</i>`;
+}
+function telSheet(html){ document.getElementById('tel-sheet-in').innerHTML=html; document.getElementById('tel-sheet').classList.add('show'); }
+function telSheetChiudi(){ document.getElementById('tel-sheet').classList.remove('show'); }
+function telMeseApri(){
+  const oggi=new Date().getFullYear();
+  if(!TEL.anno) TEL.anno=TEL.mese?Number(TEL.mese.split('-')[0]):oggi-2;
+  const anni=[]; for(let y=oggi-5;y<=oggi;y++) anni.push(y);
+  const [my,mm]=TEL.mese?TEL.mese.split('-').map(Number):[0,0];
+  telSheet(`<div class="tel-sheet-h"><span>Produzione</span><span><button type="button" onclick="TEL.mese=null;telMeseRender();telSheetChiudi()">Nessuna</button> <button type="button" onclick="telSheetChiudi()">Chiudi</button></span></div>
+    <div class="tel-grid" style="grid-template-columns:repeat(3,1fr)">${anni.map(y=>`<button type="button" class="anno ${y===TEL.anno?'on':''}" onclick="TEL.anno=${y};telMeseApri()">${y}</button>`).join('')}</div>
+    <div class="tel-grid" style="grid-template-columns:repeat(4,1fr)">${MESI_BREVI.map((m,k)=>`<button type="button" class="${my===TEL.anno&&mm===k+1?'on':''}" onclick="telMeseScegli(${k+1})">${m}</button>`).join('')}</div>`);
+}
+function telMeseScegli(m){ TEL.mese=TEL.anno+'-'+String(m).padStart(2,'0'); telMeseRender(); telSheetChiudi(); }
+function telPadApri(){ TEL.pad=TEL.forme?String(TEL.forme):''; telPadRender(true); }
+function telPadRender(nuovo){
+  const v=calcForme(TEL.pad);
+  const res=TEL.pad.includes('+')||TEL.pad.includes('-')?(Number.isNaN(v)?'':' = '+fmtNum(v)):'';
+  const html=`<div class="tel-sheet-h"><span>Forme</span><button type="button" onclick="telSheetChiudi()">Chiudi</button></div>
+    <div class="tel-disp"><b id="tel-pad-v">${escapeHtml(TEL.pad)||'0'}</b><span>${res||'forme'}</span></div>
+    <div class="tel-grid tel-pad" style="grid-template-columns:repeat(3,1fr)">
+      ${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" onclick="telPadTasto('${n}')">${n}</button>`).join('')}
+      <button type="button" class="k2" onclick="telPadTasto('+')">+</button><button type="button" onclick="telPadTasto('0')">0</button><button type="button" class="k2" onclick="telPadTasto('⌫')">⌫</button>
+    </div>
+    <button type="button" class="tel-cta" onclick="telPadOk()">OK</button>`;
+  if(nuovo) telSheet(html); else document.getElementById('tel-sheet-in').innerHTML=html;
+}
+function telPadTasto(k){
+  if(k==='⌫') TEL.pad=TEL.pad.slice(0,-1);
+  else if(k==='+'){ if(TEL.pad && !/[+]$/.test(TEL.pad)) TEL.pad+='+'; }
+  else if(TEL.pad.length<12) TEL.pad+=k;
+  telPadRender(false);
+}
+function telPadOk(){
+  const t=TEL.pad.replace(/\+$/,''); const v=t?calcForme(t):0;
+  if(Number.isNaN(v)) return;
+  TEL.forme=Math.max(0,Math.round(v)); telForme(0); telSheetChiudi();
+}
+function telFoot(){
+  const f=document.getElementById('tel-foot');
+  f.innerHTML=TEL.edit
+    ? `<button type="button" class="tel-cta ghost" onclick="telAnnulla()">Annulla</button><button type="button" class="tel-cta del" onclick="telElimina()">Elimina</button><button type="button" class="tel-cta" id="tel-go" onclick="telRegistra()">Salva modifica</button>`
+    : `<button type="button" class="tel-cta" id="tel-go" onclick="telRegistra()">Registra riga</button>`;
+}
+function telMsg(t,cls){ const m=document.getElementById('tel-msg'); m.textContent=t; m.className='tel-msg '+(cls||''); if(t) document.getElementById('tel-body').scrollTop=0; }
+async function telRegistra(){
+  const sc=document.getElementById('tel-sc').value.trim();
+  const ma=document.getElementById('tel-ma').value.trim().toUpperCase();
+  const tipologia=TEL.tip, note=up(document.getElementById('tel-no').value.trim());
+  const err=[];
+  if(!/^\d+$/.test(sc)) err.push('scalera mancante o non valida');
+  if(!MATRICOLA_OPTIONAL.includes(tipologia) && !ma) err.push('matricola obbligatoria');
+  if(!MESE_OPTIONAL.includes(tipologia) && !TEL.mese) err.push('produzione obbligatoria');
+  if(!(TEL.forme>0)) err.push('numero di forme a zero');
+  if(err.length){ telMsg('Da sistemare: '+err.join(' · '),'err'); return; }
+  const riga={ scalera:Number(sc), matricola:parseMatricola(ma), mese:TEL.mese, forme:TEL.forme, tipologia, note };
+  const btn=document.getElementById('tel-go'); btn.disabled=true;
+  const {error}=TEL.edit ? await sb.from(TABLE).update(riga).eq('id',TEL.edit) : await sb.from(TABLE).insert([riga]);
+  btn.disabled=false;
+  if(error){ telMsg('Salvataggio non riuscito: '+error.message,'err'); return; }
+  telMsg(`✓ ${TEL.edit?'Modificata':'Registrata'}: scalera ${sc} · ${ma||'—'} · ${TEL.mese?fmtMeseCorto(TEL.mese):'—'} · ${fmtNum(TEL.forme)} forme`,'ok');
+  TEL.edit=null; TEL.forme=0; TEL.tip=''; document.getElementById('tel-no').value='';
+  await loadData(); telPrepara();
+}
+function telUltime(){
+  const sc=document.getElementById('tel-sc').value.trim();
+  const box=document.getElementById('tel-ult'), tt=document.getElementById('tel-ult-t');
+  const righe=(sc?DATA.filter(r=>String(r.scalera)===sc):DATA).slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  tt.textContent=sc?`Righe della scalera ${sc}`:'Ultime righe registrate';
+  if(!righe.length){ box.innerHTML='<div class="tel-vuota">Ancora nessuna riga'+(sc?' per questa scalera':'')+'.</div>'; return; }
+  const vis=righe.slice(0,sc?30:8);
+  box.innerHTML='<div style="display:flex;flex-direction:column;gap:7px">'+vis.map(r=>`<div class="tel-li ${TEL.edit===String(r.id)?'sel':''}" onclick="telModifica('${escapeHtml(String(r.id))}')">
+      <div><b>${sc?'':'Sc. '+escapeHtml(String(r.scalera))+' · '}${escapeHtml(r.matricola!=null&&r.matricola!==''?String(r.matricola):'—')} · ${r.mese?fmtMeseCorto(r.mese):'—'}</b><small>${escapeHtml(r.tipologia?up(r.tipologia):'Normale')}${r.note?' · '+escapeHtml(r.note):''}</small></div><div class="f">${fmtNum(r.forme)}</div></div>`).join('')+'</div>'+
+    (sc?`<div class="tel-tot" style="margin-top:8px"><span>Totale scalera ${escapeHtml(sc)}</span><span>${fmtNum(righe.reduce((t,r)=>t+Number(r.forme||0),0))} forme</span></div>`:'');
+}
+function telModifica(id){
+  const r=DATA.find(x=>String(x.id)===id); if(!r) return;
+  TEL.edit=id;
+  document.getElementById('tel-sc').value=r.scalera??'';
+  document.getElementById('tel-ma').value=r.matricola??'';
+  document.getElementById('tel-no').value=r.note||'';
+  TEL.mese=r.mese||null; TEL.anno=null; TEL.forme=Number(r.forme)||0; TEL.tip=up(r.tipologia||'');
+  telTipRender(); telForme(0); telMeseRender(); telFoot(); telUltime();
+  telMsg('Modifica della riga selezionata: cambia i valori e tocca «Salva modifica».','');
+  document.getElementById('tel-msg').className='tel-msg ok'; document.getElementById('tel-msg').style.background='var(--green-dark)';
+}
+function telAnnulla(){ TEL.edit=null; TEL.forme=0; TEL.tip=''; document.getElementById('tel-no').value=''; const m=document.getElementById('tel-msg'); m.style.background=''; telMsg('',''); telTipRender(); telForme(0); telFoot(); telUltime(); }
+async function telElimina(){
+  if(!TEL.edit || !confirm('Eliminare questa riga dall\'inventario?')) return;
+  const {error}=await sb.from(TABLE).delete().eq('id',TEL.edit);
+  if(error){ telMsg('Eliminazione non riuscita: '+error.message,'err'); return; }
+  TEL.edit=null; TEL.forme=0; TEL.tip=''; document.getElementById('tel-no').value='';
+  document.getElementById('tel-msg').style.background='';
+  telMsg('Riga eliminata.','ok'); await loadData(); telPrepara();
+}
+document.getElementById('tel-sc').addEventListener('input',()=>telUltime());
+document.getElementById('tel-msg').addEventListener('click',e=>{ if(!TEL.edit) e.currentTarget.className='tel-msg'; });
+// apertura automatica: preferenza salvata, oppure schermo da telefono
+(function(){ const p=telIdx(); if(p==='1' || (p===null && window.matchMedia('(max-width:700px)').matches)) document.body.classList.add('tel-on'); })();
 </script>
 </body>
 </html>

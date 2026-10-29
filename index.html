@@ -284,7 +284,9 @@ body.tel-on{overflow:hidden;}
 .tel-pill{background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:16px;padding:8px 12px;font:inherit;font-size:.85rem;cursor:pointer;}
 .tel-body{flex:1;overflow-y:auto;padding:12px 14px 20px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch;}
 .tel-card{background:var(--panel);border-radius:12px;padding:10px 14px;}
-.tel-lab{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;justify-content:space-between;}
+.tel-lab{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;}
+.tel-kb{border:1px solid var(--line);background:var(--head);color:var(--ink);border-radius:8px;padding:3px 7px;font:inherit;font-size:.72rem;letter-spacing:0;text-transform:none;cursor:pointer;}
+.tel-kb.on{background:var(--side);color:#fff;border-color:var(--side);}
 .tel-row{display:flex;gap:10px;}.tel-row>.tel-card{flex:1;min-width:0;}
 .tel input.tel-in{width:100%;border:0;background:transparent;font:inherit;font-size:1.45rem;font-weight:700;color:var(--ink);padding:2px 0;outline:none;}
 .tel input.tel-in::placeholder{color:var(--line);font-weight:600;}
@@ -350,10 +352,10 @@ body.tel-on{overflow:hidden;}
   <div class="tel-body" id="tel-body">
     <div class="tel-msg" id="tel-msg"></div>
     <div class="tel-row">
-      <div class="tel-card"><div class="tel-lab">Scalera</div><input class="tel-in" id="tel-sc" type="text" inputmode="numeric" autocomplete="off" list="tel-sc-list" placeholder="—"></div>
-      <div class="tel-card"><div class="tel-lab">Matricola</div><input class="tel-in" id="tel-ma" type="text" autocomplete="off" autocapitalize="characters" list="gx-mat-list" placeholder="—"></div>
+      <div class="tel-card"><div class="tel-lab">Scalera<button type="button" class="tel-kb" id="tel-sc-kb" onclick="telTastiera('sc')" title="Passa a tastiera numeri / lettere">⌨︎ ABC</button></div><input class="tel-in" id="tel-sc" type="text" inputmode="numeric" autocomplete="off" autocapitalize="characters" list="tel-sc-list" placeholder="—"></div>
+      <div class="tel-card"><div class="tel-lab">Matricola<button type="button" class="tel-kb" id="tel-ma-kb" onclick="telTastiera('ma')" title="Passa a tastiera numeri / lettere">⌨︎ ABC</button></div><input class="tel-in" id="tel-ma" type="text" inputmode="numeric" autocomplete="off" autocapitalize="characters" list="gx-mat-list" placeholder="—"></div>
     </div>
-    <datalist id="tel-sc-list"></datalist>
+    <datalist id="tel-sc-list" class="sc-list"></datalist>
     <div class="tel-card" onclick="telMeseApri()"><div class="tel-lab">Produzione</div><div class="tel-pick vuoto" id="tel-me">tocca per scegliere</div></div>
     <div class="tel-card"><div class="tel-lab">Forme</div>
       <div class="tel-step"><button class="tel-sb" type="button" onclick="telForme(-1)">−</button><div class="tel-num" id="tel-fo" onclick="telPadApri()">0</div><button class="tel-sb" type="button" onclick="telForme(1)">+</button></div>
@@ -641,7 +643,7 @@ body.tel-on{overflow:hidden;}
       <p class="bm-note" style="margin-top:0">Compila per colonna: <b>Invio</b> scende alla riga sotto, <b>Tab</b> va alla cella a destra. Puoi anche incollare più righe copiate da Excel (Scalera, Matricola, Mese/Anno, Forme, Tipologia, Note). Le righe vuote vengono ignorate.</p>
       <div class="table-wrap gx-wrap"><table class="gx">
         <thead><tr><th>#</th><th>Scalera</th><th>Matricola</th><th>Mese/Anno</th><th>Forme</th><th>Tipologia</th><th>Note</th><th>Stag.</th><th></th></tr></thead>
-        <tbody id="gx-body"></tbody>
+        <tbody id="gx-body"></tbody><datalist id="sc-list-gx" class="sc-list"></datalist>
       </table></div>
       <div class="gx-bar">
         <button class="btn ghost" type="button" onclick="gxAggiungi(10)">+ 10 righe</button>
@@ -709,7 +711,7 @@ body.tel-on{overflow:hidden;}
   <div class="panel active" id="panel-carico">
     <h2>Carica nuova merce in inventario</h2>
     <div class="grid">
-      <div><label>Scalera</label><input id="c-scalera" type="number" placeholder="es. 1"></div>
+      <div><label>Scalera</label><input id="c-scalera" type="text" inputmode="numeric" autocomplete="off" autocapitalize="characters" list="sc-list-c" placeholder="es. 1 o TERRA"><datalist id="sc-list-c" class="sc-list"></datalist></div>
       <div class="bm-mat"><label>Matricola</label><div class="mini-row"><select id="c-select" aria-label="Scegli matricola dall'elenco" onchange="caricoScegli()"><option value="">Elenco ▾</option></select><input id="c-matricola" type="text" placeholder="es. 703 o BS634" autocomplete="off" autocapitalize="characters"></div></div>
       <div><label>Mese/Anno</label><input id="c-mese" type="text" placeholder="es. 325 = mar-25" maxlength="8"></div>
       <div><label>Forme</label><input id="c-forme" class="calc" type="text" autocomplete="off" placeholder="es. 30 o =100+50"></div>
@@ -750,7 +752,7 @@ body.tel-on{overflow:hidden;}
   <div class="panel" id="panel-scarico">
     <h2>Scarica merce dall'inventario</h2>
     <div class="grid">
-      <div><label>Cerca per Scalera</label><input id="sc-search-scalera" type="number" oninput="renderScaricoList()"></div>
+      <div><label>Cerca per Scalera</label><input id="sc-search-scalera" type="text" autocapitalize="characters" oninput="renderScaricoList()"></div>
       <div><label>Cerca per Matricola</label><input id="sc-search-matricola" type="text" autocapitalize="characters" oninput="renderScaricoList()"></div>
       <div><label>Cerca per Produzione (Mese/Anno)</label><input id="sc-search-mese" type="text" placeholder="es. 325 o 24" maxlength="8"></div>
     </div>
@@ -775,7 +777,7 @@ body.tel-on{overflow:hidden;}
   <div class="panel" id="panel-pegno">
     <h2>Pegno</h2>
     <div class="grid">
-      <div><label>Cerca per Scalera</label><input id="pg-search-scalera" type="number" oninput="renderPegno()"></div>
+      <div><label>Cerca per Scalera</label><input id="pg-search-scalera" type="text" autocapitalize="characters" oninput="renderPegno()"></div>
       <div><label>Cerca per Matricola</label><input id="pg-search-matricola" type="text" autocapitalize="characters" oninput="renderPegno()"></div>
       <div><label>Cerca per Produzione (Mese/Anno)</label><input id="pg-search-mese" type="text" placeholder="es. 325 o 24" maxlength="8"></div>
     </div>
@@ -956,10 +958,31 @@ function parseMatricola(v){
   if(t==='') return null;
   return /^\d+$/.test(t)?Number(t):t;
 }
+// Scalera: di solito un numero, ma può essere anche un testo (TERRA, CORRIDOIO)
+function parseScalera(v){
+  if(v===null||v===undefined) return null;
+  const t=String(v).trim().toUpperCase().replace(/\s+/g,' ');
+  if(t==='') return null;
+  if(/^\d+(,0+)?$/.test(t)) return Number(t.replace(/,.*/,''));
+  return t;
+}
+const scaleraValida=v=>{ const t=String(v||'').trim(); return t!=='' && t.length<=30 && /^[0-9A-Za-zÀ-ÿ .\-/]+$/.test(t); };
+const fmtScalera=v=>v===null||v===undefined||v===''?'—':String(v);
+function cmpScalera(a,b){
+  const na=/^\d+$/.test(String(a??'')), nb=/^\d+$/.test(String(b??''));
+  if(na&&nb) return Number(a)-Number(b);
+  if(na) return -1; if(nb) return 1;
+  return String(a??'').localeCompare(String(b??''),'it');
+}
+const SCALERE_TESTO=['TERRA','CORRIDOIO'];
+function elencoScalere(){
+  const sc=[...new Set([...DATA.map(r=>r.scalera).filter(x=>x!==null&&x!=='').map(String),...SCALERE_TESTO])].sort(cmpScalera);
+  document.querySelectorAll('datalist.sc-list').forEach(dl=>dl.innerHTML=sc.map(x=>`<option value="${escapeHtml(x)}">`).join(''));
+}
 function normalizeRow(r){
   return {
     id: r.id ? String(r.id) : crypto.randomUUID(),
-    scalera: Number(r.scalera),
+    scalera: parseScalera(r.scalera),
     matricola: parseMatricola(r.matricola),
     mese: r.mese || null,
     forme: Number(r.forme),
@@ -1135,7 +1158,7 @@ function attachUppercase(id){
     if(pos!==null) el.setSelectionRange(pos,pos);
   });
 }
-attachUppercase('c-tipologia'); attachUppercase('c-matricola');
+attachUppercase('c-tipologia'); attachUppercase('c-matricola'); attachUppercase('c-scalera');
 // Invio nelle celle forme, tipologia e note = Carica in inventario (resta anche il tasto)
 ['c-forme','c-tipologia','c-note'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); caricaMerce(); } }); });
 attachUppercase('c-note');
@@ -1230,7 +1253,7 @@ const MESE_OPTIONAL=['SBIANCATO','RETINATO'];
 let inlineEditId=null;
 
 async function caricaMerce(){
-  const scalera=document.getElementById('c-scalera').value;
+  const scalera=document.getElementById('c-scalera').value.trim();
   const matricola=document.getElementById('c-matricola').value.trim().toUpperCase();
   const meseStr=document.getElementById('c-mese').value;
   const forme=leggiForme('c-forme');
@@ -1241,8 +1264,8 @@ async function caricaMerce(){
   const matricolaOpt=MATRICOLA_OPTIONAL.includes(tipologia);
   const meseOpt=MESE_OPTIONAL.includes(tipologia);
 
-  if(!scalera || !forme || forme<=0){
-    msg.textContent='Compila scalera e un numero di forme valido.';
+  if(!scaleraValida(scalera) || !forme || forme<=0){
+    msg.textContent='Compila scalera (numero oppure testo, es. TERRA) e un numero di forme valido.';
     msg.className='msg err'; return;
   }
   if(!matricolaOpt && !matricola){
@@ -1264,12 +1287,12 @@ async function caricaMerce(){
   const btn=document.getElementById('c-submit-btn');
   btn.disabled=true;
   const {error}=await sb.from(TABLE).insert({
-    scalera:Number(scalera), matricola: parseMatricola(matricola),
+    scalera:parseScalera(scalera), matricola: parseMatricola(matricola),
     mese, forme:Number(forme), tipologia, note
   });
   btn.disabled=false;
   if(error){
-    msg.textContent='Salvataggio non riuscito: '+error.message;
+    msg.textContent='Salvataggio non riuscito: '+scaleraErr(error.message);
     msg.className='msg err'; return;
   }
   const matricolaDisplay=matricola?matricola:'—';
@@ -1299,7 +1322,7 @@ function cancelInlineEdit(){
 async function saveInlineEdit(id){
   const rec=DATA.find(r=>r.id===id);
   if(!rec) return;
-  const scalera=document.getElementById('ir-scalera-'+id).value;
+  const scalera=document.getElementById('ir-scalera-'+id).value.trim();
   const matricola=document.getElementById('ir-matricola-'+id).value.trim().toUpperCase();
   const meseStr=document.getElementById('ir-mese-'+id).value;
   const forme=leggiForme('ir-forme-'+id);
@@ -1309,7 +1332,7 @@ async function saveInlineEdit(id){
   const matricolaOpt=MATRICOLA_OPTIONAL.includes(tipologia);
   const meseOpt=MESE_OPTIONAL.includes(tipologia);
 
-  if(!scalera || !forme || forme<=0){ alert('Compila scalera e un numero di forme valido.'); return; }
+  if(!scaleraValida(scalera) || !forme || forme<=0){ alert('Compila scalera (numero oppure testo, es. TERRA) e un numero di forme valido.'); return; }
   if(!matricolaOpt && !matricola){ alert('La matricola è obbligatoria per questa tipologia.'); return; }
   if(!meseOpt && !meseStr){ alert('Il mese/anno è obbligatorio per questa tipologia.'); return; }
   let mese=null;
@@ -1318,10 +1341,10 @@ async function saveInlineEdit(id){
     if(!mese){ alert('Formato Mese/Anno non valido. Scrivi ad esempio 325 oppure 3/25 (marzo 2025).'); return; }
   }
   const {error}=await sb.from(TABLE).update({
-    scalera:Number(scalera), matricola:parseMatricola(matricola), mese,
+    scalera:parseScalera(scalera), matricola:parseMatricola(matricola), mese,
     forme:Number(forme), tipologia, note
   }).eq('id',id);
-  if(error){ alert('Salvataggio non riuscito: '+error.message); return; }
+  if(error){ alert('Salvataggio non riuscito: '+scaleraErr(error.message)); return; }
   inlineEditId=null;
   await loadData();
 }
@@ -1351,7 +1374,7 @@ function renderScaricoList(){
   const fMese=document.getElementById('sc-search-mese').value.trim().toLowerCase();
 
   let list=DATA.filter(r=>{
-    if(fScalera && String(r.scalera)!==String(fScalera)) return false;
+    if(fScalera.trim() && String(r.scalera).toUpperCase()!==fScalera.trim().toUpperCase()) return false;
     if(fMatricola && String(r.matricola).toUpperCase()!==String(fMatricola).trim().toUpperCase()) return false;
     if(!meseCorrisponde(r,fMese)) return false;
     return true;
@@ -1366,7 +1389,7 @@ function renderScaricoList(){
     const matricolaTxt=r.matricola!=null && r.matricola!=='' ? String(r.matricola) : '—';
     const tipologiaUp=up(r.tipologia);
     return `<tr>
-      <td>${fmtNum(r.scalera)}</td>
+      <td>${escapeHtml(fmtScalera(r.scalera))}</td>
       <td>${matricolaTxt}</td>
       <td>${fmtMese(r.mese)}</td>
       <td>${fmtNum(r.forme)}</td>
@@ -1474,6 +1497,7 @@ function sortRows(rows, st){
       const d=(col==='stag')?-dir:dir;   // più mesi = produzione più vecchia
       return (x<y?-1:x>y?1:0)*d;
     }
+    if(col==='scalera') return cmpScalera(a.scalera,b.scalera)*dir;
     let va=a[col], vb=b[col];
     if(numeric){ va=Number(va)||0; vb=Number(vb)||0; }
     else{ va=(va||'').toString().toLowerCase(); vb=(vb||'').toString().toLowerCase(); }
@@ -1521,7 +1545,7 @@ function renderRow(r){
   const matricolaTxt=r.matricola!=null && r.matricola!=='' ? String(r.matricola) : '—';
   const tipologiaUp=up(r.tipologia);
   return `<tr class="${isPegno(r)?'row-pegno':''}">
-    <td>${fmtNum(r.scalera)}</td>
+    <td>${escapeHtml(fmtScalera(r.scalera))}</td>
     <td>${matricolaTxt}</td>
     <td>${fmtMeseTesto(r.mese)}</td>
     <td class="stag">${fmtStag(r.mese)}${stagionatura(r.mese)!==null?' <small class="mm">mesi</small>':''}</td>
@@ -1534,7 +1558,7 @@ function renderRow(r){
 
 function renderEditableRow(r){
   return `<tr class="editing-row">
-    <td><input type="number" id="ir-scalera-${r.id}" value="${r.scalera}"></td>
+    <td><input type="text" id="ir-scalera-${r.id}" value="${escapeHtml(fmtScalera(r.scalera).replace('—',''))}" autocapitalize="characters" list="sc-list-c"></td>
     <td><input type="text" id="ir-matricola-${r.id}" value="${r.matricola??''}" placeholder="—" autocapitalize="characters"></td>
     <td><input type="text" id="ir-mese-${r.id}" value="${r.mese?fmtMeseCorto(r.mese):''}" placeholder="es. 325" maxlength="8"></td>
     <td class="stag">${fmtStag(r.mese)}${stagionatura(r.mese)!==null?' <small class="mm">mesi</small>':''}</td>
@@ -1575,6 +1599,7 @@ function refreshAll(){
   renderBilancio('bpr'); renderBilancio('bgp');
   updateKpi();
   populateTipologiaOptions();
+  elencoScalere();
   applyFilters();
   renderScaricoList();
   renderPegno();
@@ -1585,7 +1610,7 @@ function exportExcel(){
   if(!rows.length){ alert('Nessuna riga da esportare.'); return; }
   const head=['Scalera','Matricola','Mese/Anno','Stagionatura','Forme','Tipologia','Note'];
   const body=rows.map(r=>[
-    Number(r.scalera),
+    parseScalera(r.scalera),
     (r.matricola!=null && r.matricola!=='') ? (/^\d+$/.test(String(r.matricola))?Number(r.matricola):String(r.matricola)) : '',
     r.mese ? fmtMeseTesto(r.mese).replace(/-\d{2}(\d{2})$/,'-$1') : '',
     r.mese ? stagionatura(r.mese)+' mesi' : '',
@@ -1709,7 +1734,7 @@ function renderPegno(){
   const fM=document.getElementById('pg-search-matricola').value;
   const fP=document.getElementById('pg-search-mese').value.trim().toLowerCase();
   const match=r=>{
-    if(fS && String(r.scalera)!==String(fS)) return false;
+    if(fS.trim() && String(r.scalera).toUpperCase()!==fS.trim().toUpperCase()) return false;
     if(fM && String(r.matricola).toUpperCase()!==String(fM).trim().toUpperCase()) return false;
     if(!meseCorrisponde(r,fP)) return false;
     return true;
@@ -1724,7 +1749,7 @@ function renderPegno(){
   tb1.innerHTML = inPegno.length===0
     ? '<tr class="empty-row"><td colspan="7">Nessuna merce in pegno.</td></tr>'
     : inPegno.map(r=>`<tr>
-        <td>${fmtNum(r.scalera)}</td>
+        <td>${escapeHtml(fmtScalera(r.scalera))}</td>
         <td>${mat(r)}</td>
         <td>${fmtMese(r.mese)}</td>
         <td>${fmtNum(r.forme)}</td>
@@ -1736,7 +1761,7 @@ function renderPegno(){
   tb2.innerHTML = libere.length===0
     ? '<tr class="empty-row"><td colspan="7">Nessuna riga libera trovata.</td></tr>'
     : libere.map(r=>`<tr>
-        <td>${fmtNum(r.scalera)}</td>
+        <td>${escapeHtml(fmtScalera(r.scalera))}</td>
         <td>${mat(r)}</td>
         <td>${fmtMese(r.mese)}</td>
         <td>${fmtNum(r.forme)}</td>
@@ -2517,7 +2542,7 @@ async function invChiudiConferma(){
   if(!data){ msg.textContent='Indica la data della conta.'; msg.className='msg err'; return; }
   const [y,m]=data.split('-').map(Number);
   const nome=document.getElementById('inv-chiudi-nome').value.trim()||`Inventario ${MESI_LUNGHI[m-1]} ${y}`;
-  const righe=DATA.map(r=>({scalera:Number(r.scalera),matricola:r.matricola===null||r.matricola===undefined?'':String(r.matricola),mese:r.mese||'',forme:Number(r.forme)||0,tipologia:up(r.tipologia),note:up(r.note)}));
+  const righe=DATA.map(r=>({scalera:parseScalera(r.scalera),matricola:r.matricola===null||r.matricola===undefined?'':String(r.matricola),mese:r.mese||'',forme:Number(r.forme)||0,tipologia:up(r.tipologia),note:up(r.note)}));
   const t=invTot(righe);
   document.getElementById('inv-chiudi').style.display='none';
   const altri=AF_DATA.map(r=>({prodotto:r.prodotto,forme:Number(r.forme)||0,peso_medio_kg:Number(r.peso_medio_kg)||0,forme_kg:Number(r.forme_kg)||0,...Object.fromEntries(AF_KG.map(q=>[q.k,Number(r[q.k])||0])),note:r.note||''}));
@@ -2566,7 +2591,7 @@ function invRighe(a){
   return a.righe.map(r=>({...r,stag:r.mese?stagionatura(r.mese,rif):null})).sort((x,y)=>{
     let c=0;
     if(st.col==='matricola') c=vuoto(x.matricola)&&vuoto(y.matricola)?0:vuoto(x.matricola)?1*d:vuoto(y.matricola)?-1*d:compareMatricolaAware(parseMatricola(x.matricola),parseMatricola(y.matricola),1);
-    else if(st.col==='scalera') c=(Number(x.scalera)||0)-(Number(y.scalera)||0);
+    else if(st.col==='scalera') c=cmpScalera(x.scalera,y.scalera);
     else if(st.col==='forme') c=(Number(x.forme)||0)-(Number(y.forme)||0);
     else if(st.col==='mese') c=(!x.mese&&!y.mese)?0:!x.mese?1*d:!y.mese?-1*d:cmpMese(x,y);
     else if(st.col==='stag') c=(x.stag===null&&y.stag===null)?0:x.stag===null?1*d:y.stag===null?-1*d:x.stag-y.stag;
@@ -2578,7 +2603,7 @@ function invRighe(a){
 function invDettaglioHtml(a){
   const righe=invRighe(a), t=invTot(a.righe);
   return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
-    righe.map(r=>`<tr><td>${r.scalera}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
+    righe.map(r=>`<tr><td>${escapeHtml(fmtScalera(r.scalera))}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
     `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+invAltriHtml(a);
 }
 function invAltri(a){ return Array.isArray(a.altri_formaggi)?a.altri_formaggi:[]; }
@@ -2600,7 +2625,7 @@ async function invElimina(id){
 function invExcel(id){
   const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return;
   const head=['Scalera','Matricola','Mese/Anno','Stagionatura','Forme','Tipologia','Note'];
-  const body=invRighe(a).map(r=>[Number(r.scalera),r.matricola?(/^\d+$/.test(String(r.matricola))?Number(r.matricola):String(r.matricola)):'',r.mese?fmtMeseCorto(r.mese):'',r.stag===null?'':r.stag+' mesi',Number(r.forme)||0,up(r.tipologia),up(r.note)]);
+  const body=invRighe(a).map(r=>[parseScalera(r.scalera),r.matricola?(/^\d+$/.test(String(r.matricola))?Number(r.matricola):String(r.matricola)):'',r.mese?fmtMeseCorto(r.mese):'',r.stag===null?'':r.stag+' mesi',Number(r.forme)||0,up(r.tipologia),up(r.note)]);
   body.push(['Totale','','','',invTot(a.righe).forme,'','']);
   const nomeFile='inventario-'+String(a.data_conta).slice(0,10);
   try{
@@ -2631,7 +2656,7 @@ function gxAggiungi(n){
     const i=++GX_N;
     const tr=document.createElement('tr'); tr.dataset.r=i;
     tr.innerHTML=`<td>${i}</td>
-      <td><input id="${gxId(i,'sc')}" type="text" inputmode="numeric" autocomplete="off"></td>
+      <td><input id="${gxId(i,'sc')}" type="text" autocomplete="off" autocapitalize="characters" list="sc-list-gx"></td>
       <td><input id="${gxId(i,'ma')}" type="text" autocomplete="off" autocapitalize="characters" list="gx-mat-list"></td>
       <td><input id="${gxId(i,'me')}" type="text" autocomplete="off" maxlength="8" placeholder="325"></td>
       <td><input id="${gxId(i,'fo')}" class="calc" type="text" autocomplete="off"></td>
@@ -2640,7 +2665,7 @@ function gxAggiungi(n){
       <td class="gx-stag" id="gx${i}-st"></td>
       <td><button class="del-btn" type="button" tabindex="-1" onclick="gxRimuovi(${i})" title="Svuota la riga">✕</button></td>`;
     tb.appendChild(tr);
-    ['ma','ti','no'].forEach(c=>attachUppercase(gxId(i,c)));
+    ['sc','ma','ti','no'].forEach(c=>attachUppercase(gxId(i,c)));
     meseInput(gxId(i,'me'),()=>gxStag(i),null);
     GX_COLS.forEach((c,ci)=>{
       const el=document.getElementById(gxId(i,c));
@@ -2671,7 +2696,7 @@ function gxTasto(e,i,ci){
 function gxImposta(i,c,v){
   const el=document.getElementById(gxId(i,c)); if(!el) return;
   v=String(v).trim();
-  if(c==='ma'||c==='ti'||c==='no') v=v.toUpperCase();
+  if(c==='ma'||c==='ti'||c==='no'||c==='sc') v=v.toUpperCase();
   if(c==='me'){ const m=parseMese(v); v=m?fmtMeseCorto(m):v.toLowerCase(); }
   if(c==='fo' && /^\d{1,3}(\.\d{3})+$/.test(v)) v=v.replace(/\./g,'');
   if(c==='sc' && /^\d+(,0+)?$/.test(v)) v=v.replace(/,.*/,'');
@@ -2698,6 +2723,7 @@ function gxTot(){
   for(let i=1;i<=GX_N;i++){ if(!gxRigaPiena(i)) continue; n++; const v=gxForme(document.getElementById(gxId(i,'fo')).value); if(!Number.isNaN(v)&&v>0) f+=v; }
   const el=document.getElementById('gx-tot'); if(el) el.textContent=n?`${n} righe · ${fmtNum(f)} forme`:'';
 }
+function scaleraErr(m){ return /invalid input syntax for type (integer|bigint|numeric|smallint|real|double)/i.test(m||'') ? 'la colonna Scalera su Supabase accetta solo numeri: esegui lo script «scalera-testo.sql» nel SQL Editor e riprova.' : m; }
 async function gxCarica(){
   const msg=document.getElementById('gx-msg');
   const righe=[], errori=[];
@@ -2710,20 +2736,20 @@ async function gxCarica(){
     const matOpt=MATRICOLA_OPTIONAL.includes(tipologia), meseOpt=MESE_OPTIONAL.includes(tipologia);
     const sc=v('sc'), forme=gxForme(v('fo'));
     let ok=true;
-    if(!/^\d+$/.test(sc)){ bad('sc','scalera mancante o non valida'); ok=false; }
+    if(!scaleraValida(sc)){ bad('sc','scalera mancante o non valida'); ok=false; }
     if(Number.isNaN(forme)||forme<=0){ bad('fo','numero di forme non valido'); ok=false; }
     if(!matOpt && !v('ma')){ bad('ma','matricola obbligatoria'); ok=false; }
     let mese=null;
     if(v('me')){ mese=parseMese(v('me')); if(!mese){ bad('me','produzione non valida'); ok=false; } }
     else if(!meseOpt){ bad('me','produzione obbligatoria'); ok=false; }
-    if(ok) righe.push({ scalera:Number(sc), matricola:parseMatricola(v('ma')), mese, forme:Number(forme), tipologia, note:up(v('no')) });
+    if(ok) righe.push({ scalera:parseScalera(sc), matricola:parseMatricola(v('ma')), mese, forme:Number(forme), tipologia, note:up(v('no')) });
   }
   if(errori.length){ msg.textContent=errori.slice(0,4).join(' · ')+(errori.length>4?` · … (altri ${errori.length-4})`:'')+' — nessuna riga è stata caricata.'; msg.className='msg err'; return; }
   if(!righe.length){ msg.textContent='Non ci sono righe da caricare.'; msg.className='msg err'; return; }
   const btn=document.getElementById('gx-submit'); btn.disabled=true;
   for(let k=0;k<righe.length;k+=500){
     const {error}=await sb.from(TABLE).insert(righe.slice(k,k+500));
-    if(error){ btn.disabled=false; msg.textContent='Salvataggio non riuscito: '+error.message+(k?` (le prime ${k} righe sono state caricate)`:''); msg.className='msg err'; return; }
+    if(error){ btn.disabled=false; msg.textContent='Salvataggio non riuscito: '+scaleraErr(error.message)+(k?` (le prime ${k} righe sono state caricate)`:''); msg.className='msg err'; return; }
   }
   btn.disabled=false;
   const tot=righe.reduce((t,r)=>t+r.forme,0);
@@ -2789,7 +2815,7 @@ function bgTasto(e,tab,i,ci){
 function bgImposta(tab,i,c,v){
   const el=document.getElementById(bgId(tab,i,c)); if(!el) return;
   v=String(v).trim();
-  if(c==='ma'||c==='ti'||c==='no') v=v.toUpperCase();
+  if(c==='ma'||c==='ti'||c==='no'||c==='sc') v=v.toUpperCase();
   if(c==='me'){ const m=parseMese(v); v=m?fmtMeseCorto(m):v.toLowerCase(); }
   if(c==='fo' && /^\d{1,3}(\.\d{3})+$/.test(v)) v=v.replace(/\./g,'');
   el.value=v; el.classList.remove('gx-err');
@@ -3108,12 +3134,18 @@ function telApri(){ document.body.classList.add('tel-on'); telSalvaPref('1'); te
 function telChiudi(){ document.body.classList.remove('tel-on'); telSalvaPref('0'); }
 function telPrepara(){
   try{ gxElencoMatricole(); }catch(e){}
-  const sc=[...new Set(DATA.map(r=>r.scalera).filter(x=>x!==null&&x!==''))].sort((a,b)=>a-b);
-  document.getElementById('tel-sc-list').innerHTML=sc.map(x=>`<option value="${escapeHtml(String(x))}">`).join('');
+  elencoScalere();
   telTipRender(); telForme(0); telMeseRender(); telFoot(); telUltime();
   const st=document.getElementById('sync-status'); document.getElementById('tel-sync').textContent=st?st.textContent.replace('Dati aggiornati alle','agg.'):'';
 }
 async function telAggiorna(){ await loadData(); telPrepara(); }
+function telTastiera(c){
+  const el=document.getElementById('tel-'+c), kb=document.getElementById('tel-'+c+'-kb');
+  const testo=el.getAttribute('inputmode')!=='text';
+  el.setAttribute('inputmode',testo?'text':'numeric');
+  kb.classList.toggle('on',testo); kb.textContent=testo?'⌨︎ 123':'⌨︎ ABC';
+  el.blur(); setTimeout(()=>el.focus(),30);
+}
 function telTipologie(){
   const base=['PEGNO',...new Set(DATA.map(r=>up(r.tipologia)).filter(Boolean))];
   return [...new Set(base)].sort((a,b)=>a==='PEGNO'?-1:b==='PEGNO'?1:a.localeCompare(b));
@@ -3187,28 +3219,29 @@ function telFoot(){
 }
 function telMsg(t,cls){ const m=document.getElementById('tel-msg'); m.textContent=t; m.className='tel-msg '+(cls||''); if(t) document.getElementById('tel-body').scrollTop=0; }
 async function telRegistra(){
-  const sc=document.getElementById('tel-sc').value.trim();
+  const sc=document.getElementById('tel-sc').value.trim().toUpperCase();
   const ma=document.getElementById('tel-ma').value.trim().toUpperCase();
   const tipologia=TEL.tip, note=up(document.getElementById('tel-no').value.trim());
   const err=[];
-  if(!/^\d+$/.test(sc)) err.push('scalera mancante o non valida');
+  if(!scaleraValida(sc)) err.push('scalera mancante o non valida');
   if(!MATRICOLA_OPTIONAL.includes(tipologia) && !ma) err.push('matricola obbligatoria');
   if(!MESE_OPTIONAL.includes(tipologia) && !TEL.mese) err.push('produzione obbligatoria');
   if(!(TEL.forme>0)) err.push('numero di forme a zero');
   if(err.length){ telMsg('Da sistemare: '+err.join(' · '),'err'); return; }
-  const riga={ scalera:Number(sc), matricola:parseMatricola(ma), mese:TEL.mese, forme:TEL.forme, tipologia, note };
+  const riga={ scalera:parseScalera(sc), matricola:parseMatricola(ma), mese:TEL.mese, forme:TEL.forme, tipologia, note };
   const btn=document.getElementById('tel-go'); btn.disabled=true;
   const {error}=TEL.edit ? await sb.from(TABLE).update(riga).eq('id',TEL.edit) : await sb.from(TABLE).insert([riga]);
   btn.disabled=false;
-  if(error){ telMsg('Salvataggio non riuscito: '+error.message,'err'); return; }
+  if(error){ telMsg('Salvataggio non riuscito: '+scaleraErr(error.message),'err'); return; }
   telMsg(`✓ ${TEL.edit?'Modificata':'Registrata'}: scalera ${sc} · ${ma||'—'} · ${TEL.mese?fmtMeseCorto(TEL.mese):'—'} · ${fmtNum(TEL.forme)} forme`,'ok');
-  TEL.edit=null; TEL.forme=0; TEL.tip=''; document.getElementById('tel-no').value='';
+  TEL.edit=null; telPulisci();
   await loadData(); telPrepara();
 }
+function telPulisci(){ TEL.forme=0; TEL.tip=''; TEL.mese=null; TEL.anno=null; document.getElementById('tel-ma').value=''; document.getElementById('tel-no').value=''; }
 function telUltime(){
-  const sc=document.getElementById('tel-sc').value.trim();
+  const sc=document.getElementById('tel-sc').value.trim().toUpperCase();
   const box=document.getElementById('tel-ult'), tt=document.getElementById('tel-ult-t');
-  const righe=(sc?DATA.filter(r=>String(r.scalera)===sc):DATA).slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  const righe=(sc?DATA.filter(r=>String(r.scalera).toUpperCase()===sc.toUpperCase()):DATA).slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
   tt.textContent=sc?`Righe della scalera ${sc}`:'Ultime righe registrate';
   if(!righe.length){ box.innerHTML='<div class="tel-vuota">Ancora nessuna riga'+(sc?' per questa scalera':'')+'.</div>'; return; }
   const vis=righe.slice(0,sc?30:8);
@@ -3227,15 +3260,16 @@ function telModifica(id){
   telMsg('Modifica della riga selezionata: cambia i valori e tocca «Salva modifica».','');
   document.getElementById('tel-msg').className='tel-msg ok'; document.getElementById('tel-msg').style.background='var(--green-dark)';
 }
-function telAnnulla(){ TEL.edit=null; TEL.forme=0; TEL.tip=''; document.getElementById('tel-no').value=''; const m=document.getElementById('tel-msg'); m.style.background=''; telMsg('',''); telTipRender(); telForme(0); telFoot(); telUltime(); }
+function telAnnulla(){ TEL.edit=null; telPulisci(); telMeseRender(); const m=document.getElementById('tel-msg'); m.style.background=''; telMsg('',''); telTipRender(); telForme(0); telFoot(); telUltime(); }
 async function telElimina(){
   if(!TEL.edit || !confirm('Eliminare questa riga dall\'inventario?')) return;
   const {error}=await sb.from(TABLE).delete().eq('id',TEL.edit);
   if(error){ telMsg('Eliminazione non riuscita: '+error.message,'err'); return; }
-  TEL.edit=null; TEL.forme=0; TEL.tip=''; document.getElementById('tel-no').value='';
+  TEL.edit=null; telPulisci();
   document.getElementById('tel-msg').style.background='';
   telMsg('Riga eliminata.','ok'); await loadData(); telPrepara();
 }
+['tel-sc','tel-ma','tel-no'].forEach(id=>attachUppercase(id));
 document.getElementById('tel-sc').addEventListener('input',()=>telUltime());
 document.getElementById('tel-msg').addEventListener('click',e=>{ if(!TEL.edit) e.currentTarget.className='tel-msg'; });
 // apertura automatica: preferenza salvata, oppure schermo da telefono

@@ -393,7 +393,7 @@ body.tel-on{overflow:hidden;}
     <div class="side-foot">
       <span id="sync-status">Non connesso</span>
       <span class="sync-actions">
-        <button class="print-btn" onclick="loadData()">Aggiorna</button>
+        <button class="print-btn" onclick="loadData(true)">Aggiorna</button>
         <button class="print-btn" onclick="doLogout()">Esci</button>
       </span>
     </div>
@@ -882,7 +882,8 @@ function showLogin(message){
 }
 function hideLogin(){ document.getElementById('login-overlay').classList.remove('show'); }
 
-async function loadData(){
+let LAST_LOAD=0;
+async function loadData(completo=false){
   if(!sb) return false;
   setStatus('Sincronizzazione…');
   try{
@@ -899,7 +900,8 @@ async function loadData(){
     DATA=all;
     refreshAll();
     if(document.body.classList.contains('tel-on')) telPrepara();
-    loadBilancio();
+    LAST_LOAD=Date.now();
+    loadBilancio(completo);
     setStatus('Dati aggiornati alle '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
     return true;
   }catch(e){
@@ -926,7 +928,7 @@ async function doLogin(ev){
 
 async function doLogout(){
   if(sb) await sb.auth.signOut();
-  DATA=[]; BM_DATA={PR:[],GP:[]}; BM_ERRORE=null; ARCH_DATA=[]; INV_DATA=[]; MP_DATA=[]; AF_DATA=[];
+  DATA=[]; BM_DATA={PR:[],GP:[]}; BM_ERRORE=null; ARCH_DATA=[]; ARCH_OK=false; INV_DATA=[]; INV_FULL=false; MP_DATA=[]; AF_DATA=[];
   refreshAll();
   setStatus('Non connesso');
   showLogin();
@@ -941,13 +943,13 @@ function canAutoRefresh(){
 function setupAutoRefresh(){
   if(autoRefreshSet) return;
   autoRefreshSet=true;
-  setInterval(()=>{ if(canAutoRefresh()) loadData(); }, 60000);
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && canAutoRefresh()) loadData(); });
+  setInterval(()=>{ if(canAutoRefresh() && Date.now()-LAST_LOAD>9*60000) loadData(); }, 60000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && canAutoRefresh() && Date.now()-LAST_LOAD>2*60000) loadData(); });
 }
 
 async function startApp(){
   checkLocalMigration();
-  await loadData();
+  await loadData(true);
   setupAutoRefresh();
 }
 
@@ -1044,8 +1046,8 @@ function switchTab(tab){
   document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+tab));
   if(tab==='scarico') renderScaricoList();
   if(tab==='pegno') renderPegno();
-  if(tab==='arch') renderArchivio();
-  if(tab==='inv') renderInventari();
+  if(tab==='arch'){ if(ARCH_OK) renderArchivio(); else loadArchivio(); }
+  if(tab==='inv'){ if(INV_FULL) renderInventari(); else loadInventari(true); }
   if(tab==='mp') renderMediaPeso();
   if(tab==='nuovo') afAggiornaKg();
 }
@@ -1859,7 +1861,7 @@ function bmMatricole(tab){
 function bmNota(m){ return String(m||'').trim().toUpperCase(); }
 function bmEraNota(tab,m){ return bmMatricole(tab).includes(m); }
 
-async function loadBilancio(){
+async function loadBilancio(completo=false){
   if(!sb) return;
   try{
     const all=[]; let from=0; const step=1000;
@@ -1878,7 +1880,14 @@ async function loadBilancio(){
     BM_ERRORE=(e && e.message) ? e.message : String(e);
   }
   renderBilancio('bpr'); renderBilancio('bgp'); caricoElenco(); gxElencoMatricole();
-  loadBilancioQuant(); loadArchivio(); loadInventari(); loadMediaPeso(); loadAltriFormaggi();
+  loadBilancioQuant();
+  if(completo) loadSecondari();
+}
+// Tabelle che cambiano di rado (e gli archivi, molto pesanti): si leggono all'apertura, dopo una modifica
+// fatta da qui e con «Aggiorna», non a ogni aggiornamento automatico.
+function loadSecondari(){
+  loadInventari(); loadMediaPeso(); loadAltriFormaggi();
+  if(ARCH_OK) loadArchivio();
 }
 
 // Righe con stessa matricola e stessa produzione -> un'unica riga di riepilogo
@@ -2350,7 +2359,7 @@ function bmqStampa(tab){
 
 // ====== CHIUSURA BILANCIO E ARCHIVIO
 const ARCH_TABLE='bilancio_massa_archivio';
-let ARCH_DATA=[], ARCH_ERRORE=null;
+let ARCH_DATA=[], ARCH_ERRORE=null, ARCH_OK=false;
 const ARCH_APERTI=new Set();
 // ordinamento delle colonne nelle tabelle di Archivio bilanci e Inventari (clic = crescente, secondo clic = decrescente)
 const TAB_SORT={};
@@ -2371,7 +2380,7 @@ async function loadArchivio(){
   try{
     const {data,error}=await sb.from(ARCH_TABLE).select('*').order('chiuso_il',{ascending:false});
     if(error) throw error;
-    ARCH_DATA=(data||[]).filter(a=>a && Array.isArray(a.forme)); ARCH_ERRORE=null;
+    ARCH_DATA=(data||[]).filter(a=>a && Array.isArray(a.forme)); ARCH_ERRORE=null; ARCH_OK=true;
   }catch(e){ ARCH_ERRORE=(e&&e.message)?e.message:String(e); }
   renderArchivio();
 }
@@ -2401,7 +2410,7 @@ async function bmChiudiConferma(tab){
   if(d1.error||d2.error){ msg.textContent='Il bilancio è stato archiviato ma non sono riuscito a svuotare le tabelle ('+((d1.error||d2.error).message)+'). Controlla prima di ricaricare dati.'; msg.className='msg err'; }
   else { msg.textContent=`Bilancio chiuso e archiviato come «${nome}». Le tabelle sono vuote per il bilancio successivo.`; msg.className='msg ok'; }
   BM_OPEN[tab].clear(); BMQ_OPEN[tab].clear(); BM_EDIT[tab]=null; BMQ_EDIT[tab]=null;
-  await loadBilancio(); await loadArchivio();
+  await loadBilancio(); ARCH_OK=false;   // l'archivio si rilegge alla prossima apertura
 }
 
 function archTotali(a){
@@ -2506,14 +2515,17 @@ function archExcel(id){
 
 // ====== INVENTARI DI FINE MESE (la conta resta in inventario; qui se ne conserva la «foto»)
 const INV_TABLE='inventari';
-let INV_DATA=[], INV_ERRORE=null;
+let INV_DATA=[], INV_ERRORE=null, INV_FULL=false;
 const INV_APERTI=new Set();
-async function loadInventari(){
+async function loadInventari(completo){
   if(!sb) return;
+  if(completo===undefined) completo=INV_FULL;
   try{
-    const {data,error}=await sb.from(INV_TABLE).select('*').order('data_conta',{ascending:false});
+    let q=sb.from(INV_TABLE).select('*').order('data_conta',{ascending:false});
+    if(!completo) q=q.limit(1);        // basta l'ultimo (testo «Ultimo inventario chiuso»)
+    const {data,error}=await q;
     if(error) throw error;
-    INV_DATA=(data||[]).filter(x=>x && Array.isArray(x.righe)); INV_ERRORE=null;
+    INV_DATA=(data||[]).filter(x=>x && Array.isArray(x.righe)); INV_ERRORE=null; INV_FULL=!!completo;
   }catch(e){ INV_ERRORE=(e&&e.message)?e.message:String(e); }
   renderInventari(); invUltimo();
 }
@@ -3138,7 +3150,7 @@ function telPrepara(){
   telTipRender(); telForme(0); telMeseRender(); telFoot(); telUltime();
   const st=document.getElementById('sync-status'); document.getElementById('tel-sync').textContent=st?st.textContent.replace('Dati aggiornati alle','agg.'):'';
 }
-async function telAggiorna(){ await loadData(); telPrepara(); }
+async function telAggiorna(){ await loadData(true); telPrepara(); }
 function telTastiera(c){
   const el=document.getElementById('tel-'+c), kb=document.getElementById('tel-'+c+'-kb');
   const testo=el.getAttribute('inputmode')!=='text';
@@ -3230,12 +3242,17 @@ async function telRegistra(){
   if(err.length){ telMsg('Da sistemare: '+err.join(' · '),'err'); return; }
   const riga={ scalera:parseScalera(sc), matricola:parseMatricola(ma), mese:TEL.mese, forme:TEL.forme, tipologia, note };
   const btn=document.getElementById('tel-go'); btn.disabled=true;
-  const {error}=TEL.edit ? await sb.from(TABLE).update(riga).eq('id',TEL.edit) : await sb.from(TABLE).insert([riga]);
+  const {data:salvata,error}=TEL.edit ? await sb.from(TABLE).update(riga).eq('id',TEL.edit).select() : await sb.from(TABLE).insert([riga]).select();
   btn.disabled=false;
   if(error){ telMsg('Salvataggio non riuscito: '+scaleraErr(error.message),'err'); return; }
   telMsg(`✓ ${TEL.edit?'Modificata':'Registrata'}: scalera ${sc} · ${ma||'—'} · ${TEL.mese?fmtMeseCorto(TEL.mese):'—'} · ${fmtNum(TEL.forme)} forme`,'ok');
-  TEL.edit=null; telPulisci();
-  await loadData(); telPrepara();
+  const era=TEL.edit; TEL.edit=null; telPulisci();
+  if(salvata && salvata.length){          // aggiorna l'elenco in locale: niente nuovo download dell'inventario
+    if(era){ const k=DATA.findIndex(x=>String(x.id)===String(era)); if(k>=0) DATA[k]=salvata[0]; else DATA.push(salvata[0]); }
+    else DATA.push(...salvata);
+    refreshAll(); LAST_LOAD=Date.now();
+  } else await loadData();
+  telPrepara();
 }
 function telPulisci(){ TEL.forme=0; TEL.tip=''; TEL.mese=null; TEL.anno=null; document.getElementById('tel-ma').value=''; document.getElementById('tel-no').value=''; }
 function telUltime(){
@@ -3263,11 +3280,13 @@ function telModifica(id){
 function telAnnulla(){ TEL.edit=null; telPulisci(); telMeseRender(); const m=document.getElementById('tel-msg'); m.style.background=''; telMsg('',''); telTipRender(); telForme(0); telFoot(); telUltime(); }
 async function telElimina(){
   if(!TEL.edit || !confirm('Eliminare questa riga dall\'inventario?')) return;
-  const {error}=await sb.from(TABLE).delete().eq('id',TEL.edit);
+  const id=TEL.edit;
+  const {error}=await sb.from(TABLE).delete().eq('id',id);
   if(error){ telMsg('Eliminazione non riuscita: '+error.message,'err'); return; }
   TEL.edit=null; telPulisci();
   document.getElementById('tel-msg').style.background='';
-  telMsg('Riga eliminata.','ok'); await loadData(); telPrepara();
+  DATA=DATA.filter(x=>String(x.id)!==String(id)); refreshAll(); LAST_LOAD=Date.now();
+  telMsg('Riga eliminata.','ok'); telPrepara();
 }
 ['tel-sc','tel-ma','tel-no'].forEach(id=>attachUppercase(id));
 document.getElementById('tel-sc').addEventListener('input',()=>telUltime());

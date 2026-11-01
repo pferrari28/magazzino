@@ -943,8 +943,7 @@ function canAutoRefresh(){
 function setupAutoRefresh(){
   if(autoRefreshSet) return;
   autoRefreshSet=true;
-  setInterval(()=>{ if(canAutoRefresh() && Date.now()-LAST_LOAD>9*60000) loadData(); }, 60000);
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden && canAutoRefresh() && Date.now()-LAST_LOAD>2*60000) loadData(); });
+  // nessun aggiornamento automatico: i dati si rileggono all'apertura e con il tasto «Aggiorna» (↻ sul telefono)
 }
 
 async function startApp(){

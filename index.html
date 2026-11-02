@@ -173,6 +173,9 @@ table.gx td:first-child{color:var(--muted);font-size:.78rem;width:28px;}
 table.gx input{width:100%;min-width:0;padding:7px 8px;font-size:.92rem;}
 table.gx td:nth-child(2) input{width:70px;} table.gx td:nth-child(3) input{width:120px;} table.gx td:nth-child(4) input{width:100px;} table.gx td:nth-child(5) input{width:90px;}
 table.gx td:nth-child(6) input{width:140px;}
+table.gx-inv{width:auto;min-width:0;}
+table.gx-inv td:nth-child(2) input{width:140px;} table.gx-inv td:nth-child(3) input{width:130px;}
+table.gx-inv td:nth-child(6) input{width:150px;} table.gx-inv td:nth-child(7) input{width:230px;}
 table.gx td.gx-stag{font-size:.82rem;color:var(--muted);white-space:nowrap;}
 table.bg-t{min-width:700px;}
 table.bg-t td:nth-child(2) input{width:130px;} table.bg-t td:nth-child(3) input{width:110px;} table.bg-t td:nth-child(4) input{width:100px;}
@@ -641,7 +644,7 @@ body.tel-on{overflow:hidden;}
     <datalist id="gx-mat-list"></datalist>
     <div id="carico-tabella">
       <p class="bm-note" style="margin-top:0">Compila per colonna: <b>Invio</b> scende alla riga sotto, <b>Tab</b> va alla cella a destra. Puoi anche incollare più righe copiate da Excel (Scalera, Matricola, Mese/Anno, Forme, Tipologia, Note). Le righe vuote vengono ignorate.</p>
-      <div class="table-wrap gx-wrap"><table class="gx">
+      <div class="table-wrap gx-wrap"><table class="gx gx-inv">
         <thead><tr><th>#</th><th>Scalera</th><th>Matricola</th><th>Mese/Anno</th><th>Forme</th><th>Tipologia</th><th>Note</th><th>Stag.</th><th></th></tr></thead>
         <tbody id="gx-body"></tbody><datalist id="sc-list-gx" class="sc-list"></datalist>
       </table></div>
@@ -2659,6 +2662,14 @@ function invExcel(id){
 
 // ====== TABELLA VELOCE (carico a colonne, stile Excel)
 const GX_COLS=['sc','ma','me','fo','ti','no'];
+// Matricola con la provincia davanti (MN460, PC509, BS 634…) = Grana Padano
+const MAT_PADANO=/^[A-Z]{2}\s?\d{2,}$/;
+const isPadano=m=>MAT_PADANO.test(String(m||'').trim().toUpperCase());
+function gxPadano(i){
+  const ma=document.getElementById(gxId(i,'ma')), ti=document.getElementById(gxId(i,'ti')); if(!ma||!ti) return;
+  if(isPadano(ma.value)){ if(ti.value.trim()===''){ ti.value='PADANO'; ti.dataset.auto='1'; } }
+  else if(ti.dataset.auto==='1'){ if(ti.value==='PADANO') ti.value=''; delete ti.dataset.auto; }
+}
 let GX_N=0;
 function gxId(i,c){ return `gx${i}-${c}`; }
 function gxAggiungi(n){
@@ -2680,7 +2691,7 @@ function gxAggiungi(n){
     meseInput(gxId(i,'me'),()=>gxStag(i),null);
     GX_COLS.forEach((c,ci)=>{
       const el=document.getElementById(gxId(i,c));
-      el.addEventListener('input',()=>{ el.classList.remove('gx-err'); gxTot(); });
+      el.addEventListener('input',()=>{ el.classList.remove('gx-err'); if(c==='ma') gxPadano(i); if(c==='ti') delete el.dataset.auto; gxTot(); });
       el.addEventListener('keydown',e=>gxTasto(e,i,ci));
       el.addEventListener('paste',e=>gxIncolla(e,i,ci));
     });
@@ -2722,10 +2733,11 @@ function gxIncolla(e,i,ci){
   righe.forEach((riga,k)=>{
     const ri=i+k; if(ri>GX_N) gxAggiungi(ri-GX_N);
     riga.split('\t').forEach((v,j)=>{ if(ci+j<GX_COLS.length) gxImposta(ri,GX_COLS[ci+j],v); });
+    gxPadano(ri);
   });
   gxTot();
 }
-function gxRimuovi(i){ GX_COLS.forEach(c=>{ const el=document.getElementById(gxId(i,c)); el.value=''; el.classList.remove('gx-err'); }); gxStag(i); gxTot(); }
+function gxRimuovi(i){ GX_COLS.forEach(c=>{ const el=document.getElementById(gxId(i,c)); el.value=''; delete el.dataset.auto; el.classList.remove('gx-err'); }); gxStag(i); gxTot(); }
 function gxSvuota(){ document.getElementById('gx-body').innerHTML=''; GX_N=0; gxAggiungi(10); document.getElementById('gx-msg').textContent=''; gxVai(1,0); }
 function gxRigaPiena(i){ return GX_COLS.some(c=>document.getElementById(gxId(i,c)).value.trim()!==''); }
 const gxForme=v=>calcForme(/^\d{1,3}(\.\d{3})+$/.test(String(v).trim())?String(v).trim().replace(/\./g,''):v);
@@ -3137,7 +3149,7 @@ window.addEventListener('scroll', ()=>{
 });
 
 // ====== VERSIONE TELEFONO (registrazione Nuovo inventario con tasti grandi)
-const TEL={ forme:0, mese:null, tip:'', edit:null, anno:null, pad:'' };
+const TEL={ forme:0, mese:null, tip:'', edit:null, anno:null, pad:'', tipAuto:false };
 const TEL_BANCHE=['CREDEM','AGRICOLE'];
 function telIdx(){ try{ return localStorage.getItem('magazzino_telefono'); }catch(e){ return null; } }
 function telSalvaPref(v){ try{ localStorage.setItem('magazzino_telefono',v); }catch(e){} }
@@ -3158,7 +3170,7 @@ function telTastiera(c){
   el.blur(); setTimeout(()=>el.focus(),30);
 }
 function telTipologie(){
-  const base=['PEGNO',...new Set(DATA.map(r=>up(r.tipologia)).filter(Boolean))];
+  const base=['PEGNO','PADANO',...new Set(DATA.map(r=>up(r.tipologia)).filter(Boolean))];
   return [...new Set(base)].sort((a,b)=>a==='PEGNO'?-1:b==='PEGNO'?1:a.localeCompare(b));
 }
 function telTipRender(){
@@ -3170,7 +3182,7 @@ function telTipRender(){
   el.querySelectorAll('.tel-chip').forEach(b=>b.onclick=()=>{
     let t=b.dataset.t;
     if(t==='__altro'){ t=up(prompt('Nuova tipologia:')||'').trim(); if(!t) return; }
-    TEL.tip=t; telTipRender();
+    TEL.tip=t; TEL.tipAuto=false; telTipRender();
   });
   const bk=document.getElementById('tel-banche');
   bk.style.display=TEL.tip==='PEGNO'?'flex':'none';
@@ -3253,7 +3265,12 @@ async function telRegistra(){
   } else await loadData();
   telPrepara();
 }
-function telPulisci(){ TEL.forme=0; TEL.tip=''; TEL.mese=null; TEL.anno=null; document.getElementById('tel-ma').value=''; document.getElementById('tel-no').value=''; }
+function telPadano(){
+  const ma=document.getElementById('tel-ma').value;
+  if(isPadano(ma)){ if(TEL.tip===''){ TEL.tip='PADANO'; TEL.tipAuto=true; telTipRender(); } }
+  else if(TEL.tipAuto){ if(TEL.tip==='PADANO') TEL.tip=''; TEL.tipAuto=false; telTipRender(); }
+}
+function telPulisci(){ TEL.tipAuto=false; TEL.forme=0; TEL.tip=''; TEL.mese=null; TEL.anno=null; document.getElementById('tel-ma').value=''; document.getElementById('tel-no').value=''; }
 function telUltime(){
   const sc=document.getElementById('tel-sc').value.trim().toUpperCase();
   const box=document.getElementById('tel-ult'), tt=document.getElementById('tel-ult-t');
@@ -3288,6 +3305,7 @@ async function telElimina(){
   telMsg('Riga eliminata.','ok'); telPrepara();
 }
 ['tel-sc','tel-ma','tel-no'].forEach(id=>attachUppercase(id));
+document.getElementById('tel-ma').addEventListener('input',telPadano);
 document.getElementById('tel-sc').addEventListener('input',()=>telUltime());
 document.getElementById('tel-msg').addEventListener('click',e=>{ if(!TEL.edit) e.currentTarget.className='tel-msg'; });
 // apertura automatica: preferenza salvata, oppure schermo da telefono

@@ -3149,11 +3149,13 @@ window.addEventListener('scroll', ()=>{
 });
 
 // ====== VERSIONE TELEFONO (registrazione Nuovo inventario con tasti grandi)
+// Versione telefono: al momento nascosta. Per riattivarla basta mettere true.
+const TEL_ATTIVA=false;
 const TEL={ forme:0, mese:null, tip:'', edit:null, anno:null, pad:'', tipAuto:false };
 const TEL_BANCHE=['CREDEM','AGRICOLE'];
 function telIdx(){ try{ return localStorage.getItem('magazzino_telefono'); }catch(e){ return null; } }
 function telSalvaPref(v){ try{ localStorage.setItem('magazzino_telefono',v); }catch(e){} }
-function telApri(){ document.body.classList.add('tel-on'); telSalvaPref('1'); telPrepara(); }
+function telApri(){ if(!TEL_ATTIVA) return; document.body.classList.add('tel-on'); telSalvaPref('1'); telPrepara(); }
 function telChiudi(){ document.body.classList.remove('tel-on'); telSalvaPref('0'); }
 function telPrepara(){
   try{ gxElencoMatricole(); }catch(e){}
@@ -3309,7 +3311,8 @@ document.getElementById('tel-ma').addEventListener('input',telPadano);
 document.getElementById('tel-sc').addEventListener('input',()=>telUltime());
 document.getElementById('tel-msg').addEventListener('click',e=>{ if(!TEL.edit) e.currentTarget.className='tel-msg'; });
 // apertura automatica: preferenza salvata, oppure schermo da telefono
-(function(){ const p=telIdx(); if(p==='1' || (p===null && window.matchMedia('(max-width:700px)').matches)) document.body.classList.add('tel-on'); })();
+if(!TEL_ATTIVA){ const b=document.querySelector('.tel-btn'); if(b) b.style.display='none'; }
+(function(){ if(!TEL_ATTIVA) return; const p=telIdx(); if(p==='1' || (p===null && window.matchMedia('(max-width:700px)').matches)) document.body.classList.add('tel-on'); })();
 </script>
 </body>
 </html>

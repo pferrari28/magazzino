@@ -2620,7 +2620,7 @@ function renderInventari(){
     const t=invTot(a.righe), aperto=INV_APERTI.has(String(a.id));
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome)}</b><span class="arch-sub">Conta del ${invData(a.data_conta)}</span></div>
       <div class="arch-tot">${fmtNum(a.righe.length)} righe · ${fmtNum(t.forme)} forme · ${fmtNum(t.pegno)} in pegno${(a.altri_formaggi||[]).length?` · ${fmtNum(a.altri_formaggi.length)} righe altri formaggi`:''}</div>
-      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="print-btn" onclick="imApri('${a.id}')" title="Riapri questo inventario chiuso per correggerlo">✏️ Riapri e modifica</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
+      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="print-btn" onclick="imApri('${a.id}')" title="Riapri questo inventario chiuso per correggerlo">✏️ Riapri e modifica</button><button class="print-btn" onclick="invTrasferisci('${a.id}')" title="Copia questa conta nell'inventario in corso (pagina Carico merce)">⇄ Trasferisci conta</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
       ${aperto?`<div class="arch-det">${invDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
 }
@@ -3691,6 +3691,36 @@ async function imSalva(){
   await loadInventari(true);
   const info=document.getElementById('inv-info'); info.textContent=`✓ Inventario «${nome}» salvato con le correzioni (${fmtNum(n)} modifiche).`+
     (rl?` Inventario in corso: ${fmtNum(rl.ok)} correzioni applicate`+(rl.salta?`, ${fmtNum(rl.salta)} da sistemare a mano`:'')+(rl.ko.length?`; NON riuscite: ${rl.ko.slice(0,3).join(' · ')}${rl.ko.length>3?' …':''}`:'')+'.':' L\'inventario in corso non è stato toccato.');
+}
+
+// ====== TRASFERISCI CONTA: copia un inventario chiuso nell'inventario in corso (Carico merce)
+async function invTrasferisci(id){
+  const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return;
+  const info=document.getElementById('inv-info');
+  info.textContent='Controllo l\'inventario in corso…';
+  await loadData(); await loadAltriFormaggi();
+  info.textContent='';
+  const al=invAltri(a), t=invTot(a.righe);
+  let txt=`Trasferire la conta «${a.nome}» (${fmtNum(a.righe.length)} righe, ${fmtNum(t.forme)} forme${al.length?`, ${fmtNum(al.length)} righe di altri formaggi`:''}) nell'inventario in corso (pagina Carico merce)?`;
+  if(DATA.length||AF_DATA.length) txt+=`\n\nATTENZIONE: l'inventario in corso NON è vuoto (${fmtNum(DATA.length)} righe, ${fmtNum(invTot(DATA).forme)} forme${AF_DATA.length?`, ${fmtNum(AF_DATA.length)} righe di altri formaggi`:''}). Le righe trasferite si AGGIUNGONO a quelle presenti e potresti avere dei doppioni.\nPer ripartire da zero, annulla e usa prima «Cancella rilevazione».`;
+  else txt+='\n\nL\'inventario in corso è vuoto: dopo il trasferimento conterrà esattamente questa conta.';
+  if(!confirm(txt)) return;
+  const righe=a.righe.map(r=>({ scalera:parseScalera(r.scalera), matricola:parseMatricola(r.matricola), mese:r.mese||null, forme:Number(r.forme)||0, tipologia:up(r.tipologia), note:up(r.note) }));
+  info.textContent=`Trasferimento in corso… (${fmtNum(righe.length)} righe)`;
+  let fatte=0;
+  for(let k=0;k<righe.length;k+=500){
+    const {error}=await sb.from(TABLE).insert(righe.slice(k,k+500));
+    if(error){ info.textContent=`Trasferimento non completato: ${scaleraErr(error.message)}.`+(fatte?` Sono state trasferite le prime ${fmtNum(fatte)} righe: controlla il Carico merce prima di riprovare.`:' Non è stato trasferito niente.'); await loadData(); return; }
+    fatte+=Math.min(500,righe.length-k);
+  }
+  let afMsg='';
+  if(al.length){
+    const afRighe=al.map(r=>{ const o={ prodotto:r.prodotto, forme:Number(r.forme)||0, peso_medio_kg:Number(r.peso_medio_kg)||0, forme_kg:Number(r.forme_kg)||0, note:r.note||'' }; AF_KG.forEach(q=>o[q.k]=Number(r[q.k])||0); return o; });
+    const {error}=await sb.from(AF_TABLE).insert(afRighe);
+    afMsg=error?` Altri formaggi NON trasferiti: ${mpErrTxt(error)}.`:` e ${fmtNum(afRighe.length)} righe di altri formaggi`;
+  }
+  await loadData(); await loadAltriFormaggi();
+  info.textContent=`✓ Conta «${a.nome}» trasferita nell'inventario in corso: ${fmtNum(fatte)} righe (${fmtNum(t.forme)} forme)${afMsg.startsWith(' e')?afMsg+'.':'.'+afMsg} La trovi nella pagina Carico merce.`;
 }
 </script>
 </body>

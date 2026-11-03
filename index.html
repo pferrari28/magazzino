@@ -331,6 +331,24 @@ body.tel-on{overflow:hidden;}
 .tel-disp{background:var(--panel);border-radius:12px;padding:8px 14px;display:flex;justify-content:space-between;align-items:baseline;}
 .tel-disp b{font-size:2.2rem;}.tel-disp span{color:var(--muted);}
 @media (min-width:700px){ .tel-body,.tel-foot{max-width:520px;width:100%;margin-left:auto;margin-right:auto;} .tel-sheet-in{max-width:520px;margin:0 auto;} }
+
+/* ===== Modifica di un inventario chiuso ===== */
+.im-banner{background:var(--head);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:8px;padding:10px 14px;margin:10px 0;font-size:.9rem;}
+.im-head{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin:10px 0;}
+.im-head label,.im-bar label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:3px;}
+.im-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin:14px 0 6px;}
+.im-bar input{width:150px;}
+tr.im-r td:first-child{text-align:center;font-weight:700;}
+tr.im-r.mod td:first-child{box-shadow:inset 3px 0 var(--amber);color:var(--ink);}
+tr.im-r.new td:first-child{box-shadow:inset 3px 0 #2E7D4F;color:#2E7D4F;}
+tr.im-r.del td:first-child{box-shadow:inset 3px 0 var(--danger);color:var(--danger);}
+tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
+.im-tot{display:flex;gap:18px;flex-wrap:wrap;font-weight:700;margin:10px 0 4px;}
+.im-tot span small{font-weight:400;color:var(--muted);}
+.im-diff{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:12px 0;background:var(--panel);}
+.im-diff ul{margin:6px 0 10px;padding-left:18px;font-size:.9rem;}
+.im-diff li.new{color:#2E7D4F;} .im-diff li.del{color:var(--danger);}
+.im-foot{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px;}
 </style>
 </head>
 <body>
@@ -636,6 +654,7 @@ body.tel-on{overflow:hidden;}
     <h2>Archivio inventari</h2>
     <p class="bm-note" id="inv-info"></p>
     <div id="inv-lista"></div>
+    <div id="inv-edit" style="display:none"></div>
   </div>
 
   <!-- NUOVO INVENTARIO (tabella veloce) -->
@@ -2593,7 +2612,7 @@ function renderInventari(){
     const t=invTot(a.righe), aperto=INV_APERTI.has(String(a.id));
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome)}</b><span class="arch-sub">Conta del ${invData(a.data_conta)}</span></div>
       <div class="arch-tot">${fmtNum(a.righe.length)} righe · ${fmtNum(t.forme)} forme · ${fmtNum(t.pegno)} in pegno${(a.altri_formaggi||[]).length?` · ${fmtNum(a.altri_formaggi.length)} righe altri formaggi`:''}</div>
-      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
+      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="print-btn" onclick="imApri('${a.id}')" title="Riapri questo inventario chiuso per correggerlo">✏️ Riapri e modifica</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
       ${aperto?`<div class="arch-det">${invDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
 }
@@ -3313,6 +3332,258 @@ document.getElementById('tel-msg').addEventListener('click',e=>{ if(!TEL.edit) e
 // apertura automatica: preferenza salvata, oppure schermo da telefono
 if(!TEL_ATTIVA){ const b=document.querySelector('.tel-btn'); if(b) b.style.display='none'; }
 (function(){ if(!TEL_ATTIVA) return; const p=telIdx(); if(p==='1' || (p===null && window.matchMedia('(max-width:700px)').matches)) document.body.classList.add('tel-on'); })();
+
+// ====== MODIFICA DI UN INVENTARIO CHIUSO (riapri → correggi → salva)
+// Si lavora su una copia della «foto» salvata nell'Archivio inventari. L'inventario in corso
+// (tabella «inventario», quella del Carico merce) non viene mai letto né scritto da qui.
+let IM=null;
+const IM_PAGINA=100;
+const IM_CAMPI=['sc','ma','me','fo','ti','no'];
+const imRaw=r=>({ sc:r.scalera==null?'':String(r.scalera), ma:r.matricola==null?'':String(r.matricola), me:r.mese?fmtMeseCorto(r.mese):'', fo:String(Number(r.forme)||0), ti:up(r.tipologia), no:up(r.note) });
+function imNorm(raw){
+  const me=raw.me.trim();
+  const fo=raw.fo.trim();
+  return { scalera:raw.sc.trim().toUpperCase(), matricola:raw.ma.trim().toUpperCase(), mese:me===''?'':(parseMese(me)||null),
+           forme:calcForme(/^\d{1,3}(\.\d{3})+$/.test(fo)?fo.replace(/\./g,''):fo), tipologia:up(raw.ti.trim()), note:up(raw.no.trim()) };
+}
+const imKey=n=>[n.scalera,n.matricola,n.mese,n.forme,n.tipologia,n.note].join('|');
+function imRiga(o,k){ const raw=imRaw(o), n=imNorm(raw); return { k, o, raw, n, on:n, okey:imKey(n), del:false }; }
+function imStato(r){ if(r.del) return 'del'; if(!r.o) return 'new'; return imKey(r.n)===r.okey?'':'mod'; }
+const imAfRaw=r=>{ const x={ pr:r.prodotto||'', fo:Number(r.forme)?String(r.forme):'', no:up(r.note) }; AF_KG.forEach(q=>x[q.id]=Number(r[q.k])?String(r[q.k]).replace('.',','):''); return x; };
+function imAfLeggi(raw,o){            // oggetto da salvare oppure {errore}
+  const prodotto=mpKey(raw.pr); if(!prodotto) return {errore:'prodotto mancante'};
+  let forme=0; if(raw.fo.trim()!==''){ forme=calcForme(/^\d{1,3}(\.\d{3})+$/.test(raw.fo.trim())?raw.fo.trim().replace(/\./g,''):raw.fo); if(Number.isNaN(forme)||forme<0) return {errore:'numero di forme non valido'}; }
+  const out={prodotto,forme,note:up(raw.no.trim())};
+  for(const q of AF_KG){ let x=0; if(raw[q.id].trim()!==''){ x=calcKg(raw[q.id]); if(Number.isNaN(x)||x<0) return {errore:`${q.t.toLowerCase()}: valore non valido`}; } out[q.k]=x; }
+  const peso=(o && mpKey(o.prodotto)===prodotto && Number(o.peso_medio_kg))?Number(o.peso_medio_kg):mpPeso(prodotto);   // peso storico se il prodotto non è cambiato
+  if(forme>0 && !peso) return {errore:`manca la media peso di «${prodotto}» (pagina Media peso prodotti)`};
+  out.peso_medio_kg=forme>0?peso:0; out.forme_kg=forme>0?Math.round(forme*peso*100)/100:0;
+  if(!forme && !AF_KG.some(q=>out[q.k])) return {errore:'inserisci almeno un valore'};
+  return out;
+}
+const imAfKey=o=>[o.prodotto,Number(o.forme)||0,...AF_KG.map(q=>Number(o[q.k])||0),up(o.note)].join('|');
+function imAfRiga(o,k){ const raw=o?imAfRaw(o):{ pr:'', fo:'', no:'', ...Object.fromEntries(AF_KG.map(q=>[q.id,''])) }; return { k, o, raw, okey:o?imAfKey({...o,prodotto:mpKey(o.prodotto)}):'', del:false }; }
+function imAfStato(r){ if(r.del) return 'del'; if(!r.o) return 'new'; const x=imAfLeggi(r.raw,r.o); return x.errore?'mod':(imAfKey(x)===r.okey?'':'mod'); }
+
+function imHaModifiche(){
+  if(!IM) return false;
+  return IM.nome!==IM.nomeO || IM.data!==IM.dataO || IM.righe.some(r=>{ const t=imStato(r); return t==='mod'||(t==='del'&&r.o)||(t==='new'); }) || IM.af.some(r=>{ const t=imAfStato(r); return t==='mod'||(t==='del'&&r.o)||t==='new'; });
+}
+window.addEventListener('beforeunload',e=>{ if(imHaModifiche()){ e.preventDefault(); e.returnValue=''; } });
+
+function imApri(id){
+  const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return;
+  if(IM && !confirm('C\'è già una modifica aperta: se continui, le correzioni non salvate vanno perse. Continuare?')) return;
+  IM={ id:a.id, a, nome:a.nome||'', nomeO:a.nome||'', data:String(a.data_conta).slice(0,10), dataO:String(a.data_conta).slice(0,10),
+       righe:a.righe.map((r,k)=>imRiga(r,k)), nextK:a.righe.length, af:invAltri(a).map((r,k)=>imAfRiga(r,k)), afNext:invAltri(a).length,
+       hasAf:('altri_formaggi' in a), fSc:'', fMa:'', pagina:1, soloErr:null };
+  document.getElementById('inv-lista').style.display='none'; document.getElementById('inv-info').style.display='none';
+  document.getElementById('inv-edit').style.display='';
+  imRender(); window.scrollTo({top:0});
+}
+function imChiudi(conferma){
+  if(conferma && imHaModifiche() && !confirm('Chiudere senza salvare? Le correzioni fatte vanno perse.')) return;
+  IM=null; const e=document.getElementById('inv-edit'); e.style.display='none'; e.innerHTML='';
+  document.getElementById('inv-lista').style.display=''; document.getElementById('inv-info').style.display='';
+  renderInventari();
+}
+function imRender(){
+  const e=document.getElementById('inv-edit');
+  e.innerHTML=`<div class="im-banner"><b>Inventario riaperto per correzioni.</b> Stai modificando la copia salvata «${escapeHtml(IM.nomeO)}»: le correzioni valgono solo per questo inventario chiuso. L'inventario in corso (Carico merce) e i suoi aggiornamenti <b>non vengono toccati</b>.</div>
+    <div class="im-head"><div><label>Nome</label><input id="im-nome" type="text" value="${escapeHtml(IM.nome)}" style="width:280px"></div><div><label>Data della conta</label><input id="im-data" type="date" value="${escapeHtml(IM.data)}"></div></div>
+    <h3 style="margin:16px 0 0">Forme</h3>
+    <div class="im-bar"><div><label>Scalera</label><input id="im-f-sc" type="text" autocapitalize="characters" autocomplete="off" value="${escapeHtml(IM.fSc)}" placeholder="es. 4"></div>
+      <div><label>Matricola</label><input id="im-f-ma" type="text" autocapitalize="characters" autocomplete="off" value="${escapeHtml(IM.fMa)}" placeholder="es. 17063"></div>
+      <button class="btn ghost" type="button" onclick="imCerca()">Cerca</button><button class="btn ghost" type="button" onclick="imAzzera()">Mostra tutte</button>
+      <button class="btn ghost" type="button" onclick="imNuova()">+ Aggiungi riga</button></div>
+    <div class="msg" id="im-msg"></div>
+    <div class="table-wrap gx-wrap"><table class="gx gx-inv"><thead><tr><th></th><th>Scalera</th><th>Matricola</th><th>Mese/Anno</th><th>Forme</th><th>Tipologia</th><th>Note</th><th>Stag.</th><th></th></tr></thead><tbody id="im-tbody"></tbody></table></div>
+    <div id="im-piu"></div><div class="im-tot" id="im-tot"></div>
+    ${IM.hasAf?`<h3 style="margin:20px 0 6px">Altri formaggi</h3><div class="table-wrap gx-wrap"><table class="gx af-t"><thead><tr><th></th><th>Prodotto</th><th>Forme intere</th><th>Forme in kg</th>${AF_KG.map(q=>`<th>${q.t} kg</th>`).join('')}<th>Note</th><th></th></tr></thead><tbody id="im-af-tbody"></tbody></table></div>
+      <div class="gx-bar"><button class="btn ghost" type="button" onclick="imAfNuova()">+ Aggiungi riga</button></div>`:''}
+    <div id="im-conferma"></div>
+    <div class="im-foot"><button class="btn" type="button" onclick="imRiepilogo()">Salva modifiche</button><button class="btn ghost" type="button" onclick="imChiudi(true)">Chiudi senza salvare</button></div>`;
+  imRighe(); imAfRighe();
+  const f=document.getElementById('im-f-sc'), m=document.getElementById('im-f-ma');
+  [f,m].forEach(x=>{ attachUppercase(x.id); x.addEventListener('keydown',ev=>{ if(ev.key==='Enter') imCerca(); }); });
+  document.getElementById('im-nome').addEventListener('input',ev=>{ IM.nome=ev.target.value; });
+  document.getElementById('im-data').addEventListener('input',ev=>{ IM.data=ev.target.value; });
+}
+function imVisibili(){
+  const fs=IM.fSc.trim().toUpperCase(), fm=IM.fMa.trim().toUpperCase();
+  let lista=IM.righe.filter(r=>{
+    if(IM.soloErr) return IM.soloErr.has(r.k);
+    if(r.del && !r.o) return false;
+    if(!fs && !fm) return true;
+    const ok=(raw)=>(!fs||raw.sc.trim().toUpperCase()===fs)&&(!fm||raw.ma.trim().toUpperCase().includes(fm));
+    return ok(r.raw)||(r.o&&ok(imRaw(r.o)));
+  });
+  lista.sort((x,y)=>{ if(!x.o!==!y.o) return x.o?1:-1;                       // le righe nuove in cima
+    const c=cmpScalera(x.raw.sc.trim().toUpperCase(),y.raw.sc.trim().toUpperCase()); return c||compareMatricolaAware(parseMatricola(x.raw.ma),parseMatricola(y.raw.ma),1); });
+  return lista;
+}
+function imRighe(){
+  const tb=document.getElementById('im-tbody'); if(!tb) return;
+  const tutte=imVisibili(), vis=tutte.slice(0,IM.pagina*IM_PAGINA);
+  const rif=new Date(IM.dataO+'T12:00:00');
+  tb.innerHTML=vis.map(r=>{ const t=imStato(r), id=f=>`im-${r.k}-${f}`;
+    return `<tr class="im-r ${t}" data-k="${r.k}"><td title="${t==='mod'?'Modificata':t==='new'?'Nuova':t==='del'?'Da eliminare':''}">${t==='mod'?'✎':t==='new'?'+':t==='del'?'−':''}</td>
+      <td><input id="${id('sc')}" type="text" autocomplete="off" autocapitalize="characters" value="${escapeHtml(r.raw.sc)}"></td>
+      <td><input id="${id('ma')}" type="text" autocomplete="off" autocapitalize="characters" value="${escapeHtml(r.raw.ma)}"></td>
+      <td><input id="${id('me')}" type="text" autocomplete="off" maxlength="8" placeholder="325" value="${escapeHtml(r.raw.me)}"></td>
+      <td><input id="${id('fo')}" class="calc" type="text" autocomplete="off" value="${escapeHtml(r.raw.fo)}"></td>
+      <td><input id="${id('ti')}" type="text" autocomplete="off" autocapitalize="characters" list="tip-list" value="${escapeHtml(r.raw.ti)}"></td>
+      <td><input id="${id('no')}" type="text" autocomplete="off" autocapitalize="characters" value="${escapeHtml(r.raw.no)}"></td>
+      <td class="gx-stag" id="${id('st')}">${imStag(r,rif)}</td>
+      <td><button class="del-btn" type="button" tabindex="-1" onclick="imElimina(${r.k})" title="${r.del?'Annulla l\'eliminazione':'Elimina la riga'}">${r.del?'↩':'✕'}</button></td></tr>`; }).join('')
+    || `<tr><td colspan="9" style="padding:14px;color:var(--muted)">Nessuna riga corrisponde alla ricerca.</td></tr>`;
+  vis.forEach(r=>meseInput(`im-${r.k}-me`,()=>{},null));
+  document.getElementById('im-piu').innerHTML=(IM.soloErr?`<button class="btn ghost" type="button" onclick="IM.soloErr=null;imRighe()">Mostra di nuovo tutte le righe</button> `:'')+
+    `<span class="bm-note">Mostrate ${fmtNum(vis.length)} di ${fmtNum(tutte.length)} righe${tutte.length>vis.length?` · <a href="#" onclick="IM.pagina++;imRighe();return false">mostra altre ${IM_PAGINA}</a>`:''}</span>`;
+  imTotali();
+}
+function imStag(r,rif){ const m=r.n.mese; return m?stagionatura(m,rif)+' mesi':''; }
+function imTotali(){
+  const el=document.getElementById('im-tot'); if(!el) return;
+  const viv=IM.righe.filter(r=>!r.del);
+  const t=invTot(viv.map(r=>({forme:Number.isNaN(r.n.forme)?0:r.n.forme,tipologia:r.n.tipologia}))), t0=invTot(IM.a.righe);
+  const camb=IM.righe.filter(r=>{ const s=imStato(r); return s==='mod'||s==='new'||(s==='del'&&r.o); }).length;
+  el.innerHTML=`<span>${fmtNum(viv.length)} righe <small>(prima ${fmtNum(IM.a.righe.length)})</small></span><span>${fmtNum(t.forme)} forme <small>(prima ${fmtNum(t0.forme)})</small></span><span>${fmtNum(t.pegno)} in pegno</span><span style="color:${camb?'var(--ink)':'var(--muted)'}">${camb?fmtNum(camb)+' righe cambiate':'nessuna modifica'}</span>`;
+}
+function imCerca(){ IM.fSc=document.getElementById('im-f-sc').value; IM.fMa=document.getElementById('im-f-ma').value; IM.pagina=1; IM.soloErr=null; imRighe(); }
+function imAzzera(){ IM.fSc=''; IM.fMa=''; IM.pagina=1; IM.soloErr=null; document.getElementById('im-f-sc').value=''; document.getElementById('im-f-ma').value=''; imRighe(); }
+function imNuova(){
+  const r=imRiga({scalera:IM.fSc.trim().toUpperCase(),matricola:'',mese:'',forme:0,tipologia:'',note:''},IM.nextK++); r.o=null; r.okey=''; r.raw.fo='';
+  IM.righe.push(r); IM.pagina=1; IM.soloErr=null; imRighe();
+  const el=document.getElementById(`im-${r.k}-${r.raw.sc?'ma':'sc'}`); if(el){ el.focus(); el.scrollIntoView({block:'center'}); }
+}
+function imElimina(k){ const r=IM.righe.find(x=>x.k===k); if(!r) return; r.del=!r.del; if(r.del && !r.o){ IM.righe=IM.righe.filter(x=>x!==r); } imRighe(); }
+// modifica di una cella: aggiorna solo la copia di lavoro, la riga e i totali (niente nuovo disegno della tabella)
+function imCella(el){
+  let m=/^im-(\d+)-(sc|ma|me|fo|ti|no)$/.exec(el.id||'');
+  if(m){
+    const r=IM.righe.find(x=>x.k===Number(m[1])); if(!r) return;
+    if(m[2]!=='me' && m[2]!=='fo'){ const pos=el.selectionStart; el.value=el.value.toUpperCase(); if(pos!==null) el.setSelectionRange(pos,pos); }
+    r.raw[m[2]]=el.value; r.n=imNorm(r.raw); el.classList.remove('gx-err');
+    const tr=el.closest('tr'), t=imStato(r); tr.className='im-r '+t; tr.cells[0].textContent=t==='mod'?'✎':t==='new'?'+':'';
+    const st=document.getElementById(`im-${r.k}-st`); if(st) st.textContent=imStag(r,new Date(IM.dataO+'T12:00:00'));
+    imTotali(); return;
+  }
+  m=/^imaf-(\d+)-(\w+)$/.exec(el.id||'');
+  if(m){
+    const r=IM.af.find(x=>x.k===Number(m[1])); if(!r) return;
+    if(m[2]==='pr'||m[2]==='no'){ const pos=el.selectionStart; el.value=el.value.toUpperCase(); if(pos!==null) el.setSelectionRange(pos,pos); }
+    r.raw[m[2]]=el.value; el.classList.remove('gx-err');
+    const tr=el.closest('tr'), t=imAfStato(r); tr.className='im-r '+t; tr.cells[0].textContent=t==='mod'?'✎':t==='new'?'+':'';
+    imAfKg(r);
+  }
+}
+document.addEventListener('input',e=>{ if(IM && e.target.id && /^im(af)?-\d+-/.test(e.target.id)) imCella(e.target); });
+document.addEventListener('focusout',e=>{ if(IM && e.target.id && /^im(af)?-\d+-/.test(e.target.id)){ const el=e.target; setTimeout(()=>imCella(el),0); } });   // dopo il calcolo (=100+50)
+
+// altri formaggi
+function imAfKg(r){
+  const c=document.getElementById(`imaf-${r.k}-fk`); if(!c) return;
+  const x=imAfLeggi(r.raw,r.o); c.value=(!x.errore && x.forme_kg)?fmtKg(x.forme_kg):''; c.title=x.errore||'';
+}
+function imAfRighe(){
+  const tb=document.getElementById('im-af-tbody'); if(!tb) return;
+  tb.innerHTML=IM.af.filter(r=>!(r.del&&!r.o)).map(r=>{ const t=imAfStato(r), id=f=>`imaf-${r.k}-${f}`;
+    return `<tr class="im-r ${t}"><td>${t==='mod'?'✎':t==='new'?'+':t==='del'?'−':''}</td>
+      <td><input id="${id('pr')}" type="text" autocomplete="off" autocapitalize="characters" list="af-prod-list" value="${escapeHtml(r.raw.pr)}"></td>
+      <td><input id="${id('fo')}" class="calc" type="text" autocomplete="off" placeholder="0" value="${escapeHtml(r.raw.fo)}"></td>
+      <td><input id="${id('fk')}" type="text" readonly tabindex="-1" placeholder="kg"></td>
+      ${AF_KG.map(q=>`<td><input id="${id(q.id)}" class="calc calc-kg" type="text" autocomplete="off" placeholder="0" value="${escapeHtml(r.raw[q.id])}"></td>`).join('')}
+      <td><input id="${id('no')}" type="text" autocomplete="off" autocapitalize="characters" value="${escapeHtml(r.raw.no)}"></td>
+      <td><button class="del-btn" type="button" tabindex="-1" onclick="imAfElimina(${r.k})" title="${r.del?'Annulla l\'eliminazione':'Elimina la riga'}">${r.del?'↩':'✕'}</button></td></tr>`; }).join('')
+    || `<tr><td colspan="13" style="padding:12px;color:var(--muted)">Nessuna riga di altri formaggi.</td></tr>`;
+  IM.af.forEach(r=>imAfKg(r));
+}
+function imAfNuova(){ const r=imAfRiga(null,IM.afNext++); IM.af.push(r); imAfRighe(); const el=document.getElementById(`imaf-${r.k}-pr`); if(el) el.focus(); }
+function imAfElimina(k){ const r=IM.af.find(x=>x.k===k); if(!r) return; r.del=!r.del; if(r.del&&!r.o) IM.af=IM.af.filter(x=>x!==r); imAfRighe(); }
+
+// controllo + riepilogo prima del salvataggio
+function imValida(){
+  const errori=[], errKeys=new Set(), righe=[], af=[];
+  IM.righe.forEach(r=>{
+    if(r.del) return;
+    const t=imStato(r);
+    if(t===''){ righe.push(r.o); return; }               // riga non toccata: resta identica
+    const n=imNorm(r.raw), et=[];
+    const matOpt=MATRICOLA_OPTIONAL.includes(n.tipologia), meseOpt=MESE_OPTIONAL.includes(n.tipologia);
+    if(!scaleraValida(n.scalera)) et.push('scalera mancante o non valida');
+    if(Number.isNaN(n.forme)||n.forme<=0) et.push('numero di forme non valido');
+    if(!matOpt && !n.matricola) et.push('matricola obbligatoria');
+    if(n.mese===null) et.push('produzione non valida'); else if(!meseOpt && n.mese==='') et.push('produzione obbligatoria');
+    if(et.length){ errKeys.add(r.k); errori.push(`Riga scalera ${n.scalera||'?'} · matricola ${n.matricola||'?'}: ${et.join(', ')}`); return; }
+    righe.push({ ...(r.o||{}), scalera:parseScalera(n.scalera), matricola:n.matricola, mese:n.mese||'', forme:n.forme, tipologia:n.tipologia, note:n.note });
+  });
+  IM.af.forEach(r=>{
+    if(r.del) return;
+    if(imAfStato(r)===''){ af.push(r.o); return; }
+    const x=imAfLeggi(r.raw,r.o);
+    if(x.errore){ errori.push(`Altri formaggi «${r.raw.pr||'?'}»: ${x.errore}`); return; }
+    af.push({ ...(r.o||{}), ...x });
+  });
+  return { errori, errKeys, righe, af };
+}
+function imDiff(){
+  const f=n=>`scalera ${n.scalera||'—'} · matr. ${n.matricola||'—'} · ${n.mese?fmtMeseCorto(n.mese):'—'} · ${fmtNum(n.forme)} forme${n.tipologia?' · '+n.tipologia:''}`;
+  const lab={scalera:'scalera',matricola:'matricola',mese:'produzione',forme:'forme',tipologia:'tipologia',note:'note'};
+  const v=(k,x)=>k==='mese'?(x?fmtMeseCorto(x):'—'):(x===''||x==null?'—':String(x));
+  const out=[];
+  if(IM.nome!==IM.nomeO) out.push({t:'mod',s:`Nome: «${IM.nomeO}» → «${IM.nome}»`});
+  if(IM.data!==IM.dataO) out.push({t:'mod',s:`Data della conta: ${invData(IM.dataO)} → ${invData(IM.data)}`});
+  IM.righe.forEach(r=>{
+    const t=imStato(r);
+    if(t==='del'&&r.o) out.push({t:'del',s:'Eliminata: '+f(r.on)});
+    else if(t==='new') out.push({t:'new',s:'Aggiunta: '+f(imNorm(r.raw))});
+    else if(t==='mod'){ const n=imNorm(r.raw); out.push({t:'mod',s:`Riga scalera ${r.on.scalera||'—'} · matr. ${r.on.matricola||'—'}: `+Object.keys(lab).filter(k=>String(n[k])!==String(r.on[k])).map(k=>`${lab[k]} ${v(k,r.on[k])} → ${v(k,n[k])}`).join(', ')}); }
+  });
+  IM.af.forEach(r=>{ const t=imAfStato(r);
+    if(t==='del'&&r.o) out.push({t:'del',s:'Altri formaggi, eliminata: '+r.o.prodotto});
+    else if(t==='new') out.push({t:'new',s:'Altri formaggi, aggiunta: '+(r.raw.pr||'—')});
+    else if(t==='mod') out.push({t:'mod',s:'Altri formaggi, modificata: '+r.o.prodotto}); });
+  return out;
+}
+function imRiepilogo(){
+  const msg=document.getElementById('im-msg'), box=document.getElementById('im-conferma');
+  msg.textContent=''; msg.className='msg'; box.innerHTML='';
+  const v=imValida();
+  if(v.errori.length){
+    IM.soloErr=v.errKeys.size?v.errKeys:null; imRighe();
+    msg.textContent=v.errori.slice(0,4).join(' · ')+(v.errori.length>4?` · … (altri ${v.errori.length-4})`:'')+' — correggi e riprova.'; msg.className='msg err';
+    window.scrollTo({top:0,behavior:'smooth'}); return;
+  }
+  const d=imDiff();
+  if(!d.length){ msg.textContent='Non ci sono modifiche da salvare.'; msg.className='msg'; return; }
+  const t=invTot(v.righe), t0=invTot(IM.a.righe);
+  box.innerHTML=`<div class="im-diff"><b>Riepilogo delle modifiche</b>
+    <ul>${d.slice(0,25).map(x=>`<li class="${x.t}">${escapeHtml(x.s)}</li>`).join('')}${d.length>25?`<li>… e altre ${d.length-25}</li>`:''}</ul>
+    <div>Totale forme: ${fmtNum(t0.forme)} → <b>${fmtNum(t.forme)}</b> · righe: ${fmtNum(IM.a.righe.length)} → <b>${fmtNum(v.righe.length)}</b></div>
+    <p class="bm-note" style="margin:8px 0">Salvando, la copia dell'inventario «${escapeHtml(IM.nomeO)}» viene sostituita. Il Carico merce non cambia.</p>
+    <div class="im-foot" style="margin:0"><button class="btn" type="button" id="im-salva" onclick="imSalva()">Conferma e salva</button><button class="btn ghost" type="button" onclick="document.getElementById('im-conferma').innerHTML=''">Indietro</button></div></div>`;
+  box.scrollIntoView({block:'center',behavior:'smooth'});
+}
+async function imSalva(){
+  const btn=document.getElementById('im-salva'); const msg=document.getElementById('im-msg');
+  const v=imValida(); if(v.errori.length){ imRiepilogo(); return; }
+  const t=invTot(v.righe);
+  const payload={ nome:IM.nome.trim()||IM.nomeO, data_conta:IM.data||IM.dataO, righe:v.righe, totale_forme:t.forme, forme_pegno:t.pegno };
+  if(IM.hasAf) payload.altri_formaggi=v.af;
+  btn.disabled=true;
+  const {data,error}=await sb.from(INV_TABLE).update(payload).eq('id',IM.id).select('id');
+  btn.disabled=false;
+  if(error || !data || !data.length){
+    msg.textContent='Salvataggio non riuscito: '+(error?invErrTxt(error):'il database non ha accettato la modifica (permessi mancanti): esegui lo script «inventari-modifica.sql» in Supabase e riprova.')+' Le tue correzioni sono ancora qui.';
+    msg.className='msg err'; window.scrollTo({top:0,behavior:'smooth'}); return;
+  }
+  const nome=payload.nome, n=imDiff().length;
+  IM=null; const e=document.getElementById('inv-edit'); e.style.display='none'; e.innerHTML='';
+  document.getElementById('inv-lista').style.display=''; document.getElementById('inv-info').style.display='';
+  await loadInventari(true);
+  const info=document.getElementById('inv-info'); info.textContent=`✓ Inventario «${nome}» salvato con le correzioni (${fmtNum(n)} modifiche). Il Carico merce non è stato toccato.`;
+}
 </script>
 </body>
 </html>

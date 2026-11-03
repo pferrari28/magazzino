@@ -332,6 +332,14 @@ body.tel-on{overflow:hidden;}
 .tel-disp b{font-size:2.2rem;}.tel-disp span{color:var(--muted);}
 @media (min-width:700px){ .tel-body,.tel-foot{max-width:520px;width:100%;margin-left:auto;margin-right:auto;} .tel-sheet-in{max-width:520px;margin:0 auto;} }
 
+/* ===== Totale per tipologia ===== */
+table.tip-tot{width:auto;min-width:340px;margin-top:6px;}
+table.tip-tot td:nth-child(n+2),table.tip-tot th:nth-child(n+2){text-align:right;}
+.im-live{border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;}
+.im-live label{display:flex;gap:8px;align-items:flex-start;font-weight:600;cursor:pointer;}
+.im-live label input{width:auto;margin-top:3px;}
+.im-live ul{margin:6px 0 6px;}
+.im-live li.skip{color:var(--muted);}
 /* ===== Modifica di un inventario chiuso ===== */
 .im-banner{background:var(--head);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:8px;padding:10px 14px;margin:10px 0;font-size:.9rem;}
 .im-head{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin:10px 0;}
@@ -2637,9 +2645,23 @@ function invDettaglioHtml(a){
   const righe=invRighe(a), t=invTot(a.righe);
   return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
     righe.map(r=>`<tr><td>${escapeHtml(fmtScalera(r.scalera))}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
-    `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+invAltriHtml(a);
+    `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+totTipologieHtml(a.righe)+invAltriHtml(a);
 }
 function invAltri(a){ return Array.isArray(a.altri_formaggi)?a.altri_formaggi:[]; }
+// Totale per tipologia: righe e forme per Normale (tipologia vuota), PEGNO, BIO, PADANO…
+function totTipologie(righe){
+  const m=new Map();
+  righe.forEach(r=>{ const t=up(r.tipologia)||'NORMALE', f=Number(r.forme)||0; const x=m.get(t)||{t,righe:0,forme:0}; x.righe++; x.forme+=f; m.set(t,x); });
+  return [...m.values()].sort((a,b)=>b.forme-a.forme||a.t.localeCompare(b.t));
+}
+function totTipologieHtml(righe,titolo=true){
+  const l=totTipologie(righe); if(!l.length) return '';
+  const tf=l.reduce((t,x)=>t+x.forme,0), tr=l.reduce((t,x)=>t+x.righe,0);
+  const nome=t=>t==='NORMALE'?'Normale':escapeHtml(t);
+  return (titolo?'<div class="bm-quant-t" style="margin-top:14px">Totale per tipologia</div>':'')+`<div class="table-wrap"><table class="tip-tot"><thead><tr><th>Tipologia</th><th>Righe</th><th>Forme</th></tr></thead><tbody>`+
+    l.map(x=>`<tr><td>${x.t==='NORMALE'?'Normale':`<span class="badge ${badgeClass(x.t)}">${nome(x.t)}</span>`}</td><td>${fmtNum(x.righe)}</td><td><b>${fmtNum(x.forme)}</b></td></tr>`).join('')+
+    `<tr class="bm-tot"><td>Totale</td><td>${fmtNum(tr)}</td><td>${fmtNum(tf)}</td></tr></tbody></table></div>`;
+}
 function invAltriHtml(a){
   const al=invAltri(a); if(!al.length) return '';
   const kg=v=>Number(v)?fmtKg(v):'—', som=k=>Math.round(al.reduce((t,r)=>t+(Number(r[k])||0),0)*100)/100;
@@ -3398,7 +3420,7 @@ function imRender(){
       <button class="btn ghost" type="button" onclick="imNuova()">+ Aggiungi riga</button></div>
     <div class="msg" id="im-msg"></div>
     <div class="table-wrap gx-wrap"><table class="gx gx-inv"><thead><tr><th></th><th>Scalera</th><th>Matricola</th><th>Mese/Anno</th><th>Forme</th><th>Tipologia</th><th>Note</th><th>Stag.</th><th></th></tr></thead><tbody id="im-tbody"></tbody></table></div>
-    <div id="im-piu"></div><div class="im-tot" id="im-tot"></div>
+    <div id="im-piu"></div><div class="im-tot" id="im-tot"></div><div id="im-tip"></div>
     ${IM.hasAf?`<h3 style="margin:20px 0 6px">Altri formaggi</h3><div class="table-wrap gx-wrap"><table class="gx af-t"><thead><tr><th></th><th>Prodotto</th><th>Forme intere</th><th>Forme in kg</th>${AF_KG.map(q=>`<th>${q.t} kg</th>`).join('')}<th>Note</th><th></th></tr></thead><tbody id="im-af-tbody"></tbody></table></div>
       <div class="gx-bar"><button class="btn ghost" type="button" onclick="imAfNuova()">+ Aggiungi riga</button></div>`:''}
     <div id="im-conferma"></div>
@@ -3449,6 +3471,8 @@ function imTotali(){
   const t=invTot(viv.map(r=>({forme:Number.isNaN(r.n.forme)?0:r.n.forme,tipologia:r.n.tipologia}))), t0=invTot(IM.a.righe);
   const camb=IM.righe.filter(r=>{ const s=imStato(r); return s==='mod'||s==='new'||(s==='del'&&r.o); }).length;
   el.innerHTML=`<span>${fmtNum(viv.length)} righe <small>(prima ${fmtNum(IM.a.righe.length)})</small></span><span>${fmtNum(t.forme)} forme <small>(prima ${fmtNum(t0.forme)})</small></span><span>${fmtNum(t.pegno)} in pegno</span><span style="color:${camb?'var(--ink)':'var(--muted)'}">${camb?fmtNum(camb)+' righe cambiate':'nessuna modifica'}</span>`;
+  const tip=document.getElementById('im-tip');
+  if(tip) tip.innerHTML=totTipologieHtml(viv.map(r=>({forme:Number.isNaN(r.n.forme)?0:r.n.forme,tipologia:r.n.tipologia})));
 }
 function imCerca(){ IM.fSc=document.getElementById('im-f-sc').value; IM.fMa=document.getElementById('im-f-ma').value; IM.pagina=1; IM.soloErr=null; imRighe(); }
 function imAzzera(){ IM.fSc=''; IM.fMa=''; IM.pagina=1; IM.soloErr=null; document.getElementById('im-f-sc').value=''; document.getElementById('im-f-ma').value=''; imRighe(); }
@@ -3561,9 +3585,90 @@ function imRiepilogo(){
   box.innerHTML=`<div class="im-diff"><b>Riepilogo delle modifiche</b>
     <ul>${d.slice(0,25).map(x=>`<li class="${x.t}">${escapeHtml(x.s)}</li>`).join('')}${d.length>25?`<li>… e altre ${d.length-25}</li>`:''}</ul>
     <div>Totale forme: ${fmtNum(t0.forme)} → <b>${fmtNum(t.forme)}</b> · righe: ${fmtNum(IM.a.righe.length)} → <b>${fmtNum(v.righe.length)}</b></div>
-    <p class="bm-note" style="margin:8px 0">Salvando, la copia dell'inventario «${escapeHtml(IM.nomeO)}» viene sostituita. Il Carico merce non cambia.</p>
+    <p class="bm-note" style="margin:8px 0">Salvando, la copia dell'inventario «${escapeHtml(IM.nomeO)}» viene sostituita.</p>
+    <div class="im-live"><label><input type="checkbox" id="im-live" onchange="imLiveMostra()"> Applica le stesse correzioni anche all'inventario in corso (quello di Carico e Scarico merce)</label>
+      <div class="bm-note" style="margin:4px 0 0 24px">Vengono portate solo le correzioni: una matricola o una produzione sbagliata viene sistemata, una differenza di forme viene sommata a quelle che ci sono adesso. Carichi e scarichi fatti dopo la chiusura restano come sono.</div>
+      <div id="im-live-piano"></div></div>
     <div class="im-foot" style="margin:0"><button class="btn" type="button" id="im-salva" onclick="imSalva()">Conferma e salva</button><button class="btn ghost" type="button" onclick="document.getElementById('im-conferma').innerHTML=''">Indietro</button></div></div>`;
   box.scrollIntoView({block:'center',behavior:'smooth'});
+}
+// --- Correzioni portate anche nell'inventario in corso (tabella «inventario» e altri formaggi)
+const imK4=x=>[String(x.scalera==null?'':x.scalera).trim().toUpperCase(),String(x.matricola==null?'':x.matricola).trim().toUpperCase(),x.mese||'',up(x.tipologia)].join('|');
+function imLiveDesc(n){ return `scalera ${n.scalera||'—'} · matr. ${n.matricola||'—'} · ${n.mese?fmtMeseCorto(n.mese):'—'}`; }
+function imPianoLive(){
+  const idx=new Map(); DATA.forEach(r=>{ const k=imK4(r); if(!idx.has(k)) idx.set(k,[]); idx.get(k).push(r); });
+  const upd=new Map(), ins=[], del=[], salta=[], usati=new Set();
+  const lab={scalera:'scalera',matricola:'matricola',mese:'produzione',tipologia:'tipologia',note:'note'};
+  const valore=(f,n)=>f==='scalera'?parseScalera(n.scalera):f==='matricola'?parseMatricola(n.matricola):f==='mese'?(n.mese||null):n[f];
+  IM.righe.forEach(r=>{
+    const t=imStato(r);
+    if(t==='new'){ const n=imNorm(r.raw); ins.push({ riga:{ scalera:parseScalera(n.scalera), matricola:parseMatricola(n.matricola), mese:n.mese||null, forme:n.forme, tipologia:n.tipologia, note:n.note }, s:`Aggiunta: ${imLiveDesc(n)} · ${fmtNum(n.forme)} forme` }); return; }
+    if(!r.o || (t!=='mod' && t!=='del')) return;
+    const on=r.on, cands=(idx.get(imK4(on))||[]).slice().sort((a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||'')));
+    if(!cands.length){ salta.push(`${imLiveDesc(on)}: non c'è più nell'inventario in corso (scaricata o spostata)`); return; }
+    if(t==='del'){
+      const c=cands.find(x=>Number(x.forme)===Number(on.forme) && !usati.has(String(x.id)));
+      if(c){ usati.add(String(c.id)); del.push({ id:c.id, forme:Number(c.forme), s:`Eliminata: ${imLiveDesc(on)} · ${fmtNum(c.forme)} forme` }); }
+      else salta.push(`${imLiveDesc(on)}: da eliminare, ma le forme sono cambiate dopo la chiusura (ora ${cands.map(x=>fmtNum(x.forme)).join(' / ')})`);
+      return;
+    }
+    const n=imNorm(r.raw);
+    const campi=['scalera','matricola','mese','tipologia','note'].filter(f=>String(n[f]??'')!==String(on[f]??''));
+    const d=n.forme-on.forme;
+    cands.forEach((c,i)=>{
+      const id=String(c.id); if(usati.has(id)) return;
+      const u=upd.get(id)||{ id:c.id, forme0:Number(c.forme), set:{}, parti:[], base:c };
+      campi.forEach(f=>{
+        if(f==='note' && up(c.note)!==on.note){ salta.push(`${imLiveDesc(on)}: note non cambiate (nell'inventario in corso sono diverse: «${c.note||''}»)`); return; }
+        u.set[f]=valore(f,n); u.parti.push(`${lab[f]} ${f==='mese'?(on.mese?fmtMeseCorto(on.mese):'—'):(on[f]||'—')} → ${f==='mese'?(n.mese?fmtMeseCorto(n.mese):'—'):(n[f]||'—')}`);
+      });
+      if(d && i===0){
+        const nf=Number(c.forme)+d+(u.set.forme!==undefined?u.set.forme-Number(c.forme):0);
+        if(nf<=0) salta.push(`${imLiveDesc(on)}: forme ${d>0?'+':''}${d} non applicate (nell'inventario in corso ne restano ${fmtNum(c.forme)})`);
+        else { u.set.forme=nf; u.parti.push(`forme ${fmtNum(c.forme)} → ${fmtNum(nf)} (${d>0?'+':''}${fmtNum(d)})`); }
+      }
+      if(Object.keys(u.set).length) upd.set(id,u);
+    });
+  });
+  // altri formaggi: si correggono solo le righe rimaste identiche a quelle dell'inventario chiuso
+  const afIns=[], afUpd=[], afDel=[], afUsati=new Set();
+  const afKeyLive=o=>imAfKey({...o,prodotto:mpKey(o.prodotto)});
+  if(IM.hasAf) IM.af.forEach(r=>{
+    const t=imAfStato(r);
+    if(t==='new'){ const x=imAfLeggi(r.raw,null); if(!x.errore) afIns.push({ riga:x, s:`Altri formaggi, aggiunta: ${x.prodotto}` }); return; }
+    if(!r.o || (t!=='mod'&&t!=='del')) return;
+    const c=AF_DATA.find(x=>!afUsati.has(String(x.id)) && afKeyLive(x)===r.okey);
+    if(!c){ salta.push(`Altri formaggi «${r.o.prodotto}»: nell'inventario in corso non c'è più uguale (cambiata dopo la chiusura)`); return; }
+    afUsati.add(String(c.id));
+    if(t==='del') afDel.push({ id:c.id, s:`Altri formaggi, eliminata: ${r.o.prodotto}` });
+    else { const x=imAfLeggi(r.raw,r.o); if(!x.errore) afUpd.push({ id:c.id, set:x, s:`Altri formaggi, modificata: ${r.o.prodotto}` }); }
+  });
+  return { upd:[...upd.values()], ins, del, afIns, afUpd, afDel, salta };
+}
+async function imLiveMostra(){
+  const box=document.getElementById('im-live-piano'), on=document.getElementById('im-live').checked;
+  if(!on){ box.innerHTML=''; return; }
+  box.innerHTML='<div class="bm-note" style="margin:6px 0 0 24px">Leggo l\'inventario in corso…</div>';
+  await loadData(); if(IM.hasAf) await loadAltriFormaggi();
+  if(!IM || !document.getElementById('im-live')) return;
+  const p=imPianoLive();
+  const voci=[...p.upd.map(u=>`${imLiveDesc(u.base.scalera!=null?{scalera:String(u.base.scalera),matricola:String(u.base.matricola??''),mese:u.base.mese}:{})}: ${u.parti.join(', ')}`),...p.ins.map(x=>x.s),...p.del.map(x=>x.s),...p.afUpd.map(x=>x.s),...p.afIns.map(x=>x.s),...p.afDel.map(x=>x.s)];
+  box.innerHTML=`<div style="margin:6px 0 0 24px">${voci.length?`<b>Nell'inventario in corso verrà fatto:</b><ul>${voci.slice(0,25).map(v=>`<li>${escapeHtml(v)}</li>`).join('')}${voci.length>25?`<li>… e altre ${voci.length-25}</li>`:''}</ul>`:'<b>Nell\'inventario in corso non c\'è niente da correggere.</b>'}
+    ${p.salta.length?`<b>Non applicate, da sistemare a mano se serve:</b><ul>${p.salta.slice(0,15).map(v=>`<li class="skip">${escapeHtml(v)}</li>`).join('')}${p.salta.length>15?`<li class="skip">… e altre ${p.salta.length-15}</li>`:''}</ul>`:''}</div>`;
+}
+async function imApplicaLive(){
+  const p=imPianoLive(); const ris={ ok:0, ko:[], salta:p.salta.length };
+  for(const u of p.upd){
+    const {data,error}=await sb.from(TABLE).update(u.set).eq('id',u.id).eq('forme',u.forme0).select('id');   // solo se nel frattempo non è cambiata
+    if(error||!data||!data.length) ris.ko.push(`${u.parti.join(', ')}${error?' ('+scaleraErr(error.message)+')':' (riga cambiata nel frattempo)'}`); else ris.ok++;
+  }
+  if(p.ins.length){ const {error}=await sb.from(TABLE).insert(p.ins.map(x=>x.riga)); if(error) ris.ko.push('righe aggiunte: '+scaleraErr(error.message)); else ris.ok+=p.ins.length; }
+  for(const x of p.del){ const {data,error}=await sb.from(TABLE).delete().eq('id',x.id).eq('forme',x.forme).select('id'); if(error||!data||!data.length) ris.ko.push(x.s+(error?' ('+error.message+')':' (riga cambiata nel frattempo)')); else ris.ok++; }
+  for(const x of p.afUpd){ const {data,error}=await sb.from(AF_TABLE).update(x.set).eq('id',x.id).select('id'); if(error||!data||!data.length) ris.ko.push(x.s); else ris.ok++; }
+  if(p.afIns.length){ const {error}=await sb.from(AF_TABLE).insert(p.afIns.map(x=>x.riga)); if(error) ris.ko.push('altri formaggi aggiunti: '+error.message); else ris.ok+=p.afIns.length; }
+  for(const x of p.afDel){ const {error}=await sb.from(AF_TABLE).delete().eq('id',x.id); if(error) ris.ko.push(x.s); else ris.ok++; }
+  await loadData(); if(IM && IM.hasAf) await loadAltriFormaggi();
+  return ris;
 }
 async function imSalva(){
   const btn=document.getElementById('im-salva'); const msg=document.getElementById('im-msg');
@@ -3579,10 +3684,13 @@ async function imSalva(){
     msg.className='msg err'; window.scrollTo({top:0,behavior:'smooth'}); return;
   }
   const nome=payload.nome, n=imDiff().length;
+  const live=document.getElementById('im-live'); let rl=null;
+  if(live && live.checked){ btn.disabled=true; btn.textContent='Aggiorno l\'inventario in corso…'; rl=await imApplicaLive(); }
   IM=null; const e=document.getElementById('inv-edit'); e.style.display='none'; e.innerHTML='';
   document.getElementById('inv-lista').style.display=''; document.getElementById('inv-info').style.display='';
   await loadInventari(true);
-  const info=document.getElementById('inv-info'); info.textContent=`✓ Inventario «${nome}» salvato con le correzioni (${fmtNum(n)} modifiche). Il Carico merce non è stato toccato.`;
+  const info=document.getElementById('inv-info'); info.textContent=`✓ Inventario «${nome}» salvato con le correzioni (${fmtNum(n)} modifiche).`+
+    (rl?` Inventario in corso: ${fmtNum(rl.ok)} correzioni applicate`+(rl.salta?`, ${fmtNum(rl.salta)} da sistemare a mano`:'')+(rl.ko.length?`; NON riuscite: ${rl.ko.slice(0,3).join(' · ')}${rl.ko.length>3?' …':''}`:'')+'.':' L\'inventario in corso non è stato toccato.');
 }
 </script>
 </body>

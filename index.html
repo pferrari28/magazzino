@@ -102,6 +102,9 @@ td:nth-child(2), td:nth-child(4){font-weight:700;}
 .badge.badge-bio{background:#1E7A47;color:#fff;}
 .badge.badge-grigio{background:#667483;color:#fff;}
 .badge.badge-mezzano{background:#D97757;color:#fff;}
+.badge.badge-granbon{background:#4A5568;color:#fff;}
+.badge.badge-sbiancato{background:#8893A1;color:#fff;}
+.badge.badge-retinato{background:#7A6A5C;color:#fff;}
 .hl-credem{color:#1B6B40;font-weight:700;}
 .hl-agricole{color:#0B63A0;font-weight:700;}
 @media (prefers-color-scheme: dark){
@@ -1555,14 +1558,15 @@ function escapeHtml(s){
   return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-const GREY_TIPOLOGIE=['GRAN BON','SBIANCATO','RETINATO'];
 function badgeClass(tip){
   if(!tip) return '';
   const t=up(tip).trim();
   if(t==='PEGNO') return 'badge-pegno';
   if(t==='BIO') return 'badge-bio';
   if(t==='MEZZANO') return 'badge-mezzano';
-  if(GREY_TIPOLOGIE.includes(t)) return 'badge-grigio';
+  if(t==='GRAN BON') return 'badge-granbon';
+  if(t==='SBIANCATO') return 'badge-sbiancato';
+  if(t==='RETINATO') return 'badge-retinato';
   return '';
 }
 

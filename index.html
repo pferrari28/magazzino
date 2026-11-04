@@ -742,7 +742,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <h2>Carica nuova merce in inventario</h2>
     <div class="grid">
       <div><label>Scalera</label><input id="c-scalera" type="text" inputmode="numeric" autocomplete="off" autocapitalize="characters" list="sc-list-c" placeholder="es. 1 o TERRA"><datalist id="sc-list-c" class="sc-list"></datalist></div>
-      <div class="bm-mat"><label>Matricola</label><div class="mini-row"><select id="c-select" aria-label="Scegli matricola dall'elenco" onchange="caricoScegli()"><option value="">Elenco ▾</option></select><input id="c-matricola" type="text" placeholder="es. 703 o BS634" autocomplete="off" autocapitalize="characters"></div></div>
+      <div><label>Matricola</label><input id="c-matricola" type="text" placeholder="es. 703 o BS634" autocomplete="off" autocapitalize="characters"></div>
       <div><label>Mese/Anno</label><input id="c-mese" type="text" placeholder="es. 325 = mar-25" maxlength="8"></div>
       <div><label>Forme</label><input id="c-forme" class="calc" type="text" autocomplete="off" placeholder="es. 30 o =100+50"></div>
       <div><label>Tipologia</label><input id="c-tipologia" list="tip-list" placeholder="es. BIO"></div>
@@ -1878,16 +1878,6 @@ const csvVal=v=>v instanceof Date?(MESI_BREVI[v.getMonth()]+'-'+String(v.getFull
 const bmParseMese=parseMese;
 
 
-// elenco a discesa nel Carico merce: matricole Parmigiano Reggiano e Grana Padano
-function caricoElenco(){
-  const sel=document.getElementById('c-select'); if(!sel) return;
-  const g=(tab,nome)=>{ const l=bmMatricole(tab); return l.length?`<optgroup label="${nome}">`+l.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('')+'</optgroup>':''; };
-  sel.innerHTML='<option value="">Elenco ▾</option>'+g('bpr','Parmigiano Reggiano')+g('bgp','Grana Padano');
-}
-function caricoScegli(){
-  const sel=document.getElementById('c-select');
-  if(sel.value){ document.getElementById('c-matricola').value=sel.value; sel.value=''; document.getElementById('c-mese').focus(); }
-}
 function bmMatricole(tab){
   // elenco fisso + matricole già usate in questa pagina
   const usate=BM_DATA[BM_TIPO[tab]].map(r=>String(r.matricola));
@@ -1914,7 +1904,7 @@ async function loadBilancio(completo=false){
   }catch(e){
     BM_ERRORE=(e && e.message) ? e.message : String(e);
   }
-  renderBilancio('bpr'); renderBilancio('bgp'); caricoElenco(); gxElencoMatricole();
+  renderBilancio('bpr'); renderBilancio('bgp'); gxElencoMatricole();
   loadBilancioQuant();
   if(completo) loadSecondari();
 }

@@ -1003,19 +1003,11 @@ function parseScalera(v){
 }
 const scaleraValida=v=>{ const t=String(v||'').trim(); return t!=='' && t.length<=30 && /^[0-9A-Za-zÀ-ÿ .\-/]+$/.test(t); };
 const fmtScalera=v=>v===null||v===undefined||v===''?'—':String(v);
-function normScalera(v){
-  // tollera spazi (anche non separabili), virgole/punti decimali tipo "10,0" e simili,
-  // così un confronto numerico pulito non viene rovinato da come il valore è stato scritto
-  let s=String(v??'').replace(/[\s ]+/g,'').trim();
-  const m=s.match(/^(\d+)(?:[.,]0+)?$/);
-  return m?m[1]:s;
-}
 function cmpScalera(a,b){
-  const sa=normScalera(a), sb=normScalera(b);
-  const na=/^\d+$/.test(sa), nb=/^\d+$/.test(sb);
-  if(na&&nb) return Number(sa)-Number(sb);
-  if(na) return -1; if(nb) return 1;
-  return sa.localeCompare(sb,'it');
+  // ordinamento naturale: riconosce il numero anche dentro un'etichetta
+  // come "CORSIA 10" (deve venire dopo "CORSIA 9", non dopo "CORSIA 1")
+  const sa=String(a??'').trim(), sb=String(b??'').trim();
+  return sa.localeCompare(sb,'it',{numeric:true,sensitivity:'base'});
 }
 const SCALERE_TESTO=['TERRA','CORRIDOIO'];
 function elencoScalere(){

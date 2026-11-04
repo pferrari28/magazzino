@@ -1643,7 +1643,7 @@ function exportExcel(){
   const body=rows.map(r=>[
     parseScalera(r.scalera),
     (r.matricola!=null && r.matricola!=='') ? (/^\d+$/.test(String(r.matricola))?Number(r.matricola):String(r.matricola)) : '',
-    r.mese ? fmtMeseTesto(r.mese).replace(/-\d{2}(\d{2})$/,'-$1') : '',
+    meseExcelData(r.mese),
     r.mese ? stagionatura(r.mese)+' mesi' : '',
     Number(r.forme)||0,
     up(r.tipologia),
@@ -1653,14 +1653,14 @@ function exportExcel(){
   try{
     if(!window.XLSX) throw new Error('libreria Excel non caricata');
     const ws=XLSX.utils.aoa_to_sheet([head,...body]);
-    // Mese/Anno (es. feb-25) e Stagionatura (es. 24 mesi) restano testo
+    excelFmtMeseCol(ws,2,body.length);   // Mese/Anno: data vera, formattata «mar-25»; Stagionatura (es. 24 mesi) resta testo
     ws['!cols']=[{wch:9},{wch:10},{wch:11},{wch:14},{wch:8},{wch:12},{wch:24}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Inventario');
     XLSX.writeFile(wb,'inventario-'+oggi+'.xlsx');
   }catch(e){
     // piano B: CSV con separatore ; (si apre direttamente in Excel italiano)
-    const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const esc=v=>'"'+String(csvVal(v)).replace(/"/g,'""')+'"';
     const csv='\uFEFF'+[head,...body].map(r=>r.map(esc).join(';')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a');
@@ -1868,6 +1868,12 @@ const BM_PENDING={ bpr:null, bgp:null };   // carico in attesa di conferma matri
 
 const bmNat=(a,b)=>String(a).localeCompare(String(b),'it',{numeric:true});
 function fmtMeseCorto(v){ return fmtMeseTesto(v).replace(/-\d{2}(\d{2})$/,'-$1'); }   // gen-25
+// Produzione in Excel: una data vera (1° del mese), formattata «mar-25», così si può ordinare per data
+function meseExcelData(mese){ if(!mese) return ''; const [y,m]=String(mese).split('-').map(Number); return (y&&m)?new Date(y,m-1,1,12):''; }
+function excelFmtMeseCol(ws,colIdx,nRighe){ if(!window.XLSX) return;
+  for(let i=0;i<nRighe;i++){ const cell=ws[XLSX.utils.encode_cell({r:i+1,c:colIdx})]; if(cell && cell.v instanceof Date){ cell.t='d'; cell.z='[$-410]mmm-yy'; } }
+}
+const csvVal=v=>v instanceof Date?(MESI_BREVI[v.getMonth()]+'-'+String(v.getFullYear()).slice(-2)):v;
 
 const bmParseMese=parseMese;
 
@@ -2138,7 +2144,7 @@ function bmExcel(tab){
   const tip=bmHasTip(tab);
   const head=tip?['Matricola','Produzione','Forme','Tipologia','Note']:['Matricola','Produzione','Forme','Note'];
   const body=rows.map(g=>{
-    const base=[/^\d+$/.test(g.matricola) ? Number(g.matricola) : g.matricola, g.mese ? fmtMeseCorto(g.mese) : '', g.forme];
+    const base=[/^\d+$/.test(g.matricola) ? Number(g.matricola) : g.matricola, meseExcelData(g.mese), g.forme];
     if(tip) base.push(g.tipologia);
     base.push(g.note.replace(/ · /g,', '));
     return base;
@@ -2148,12 +2154,13 @@ function bmExcel(tab){
   try{
     if(!window.XLSX) throw new Error('libreria Excel non caricata');
     const ws=XLSX.utils.aoa_to_sheet([head,...body]);
+    excelFmtMeseCol(ws,1,body.length);
     ws['!cols']=tip?[{wch:11},{wch:12},{wch:8},{wch:12},{wch:28}]:[{wch:11},{wch:12},{wch:8},{wch:28}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Bilancio di massa');
     XLSX.writeFile(wb,nomeFile+'.xlsx');
   }catch(e){
-    const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const esc=v=>'"'+String(csvVal(v)).replace(/"/g,'""')+'"';
     const csv='﻿'+[head,...body].map(r=>r.map(esc).join(';')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
     const a=document.createElement('a');
@@ -2522,7 +2529,7 @@ function archExcel(id){
   const tab=a.tipo==='PR'?'bpr':'bgp', tip=bmHasTip(tab);
   const g=bmGruppiDa(a.forme||[],tab,{col:'matricola',dir:1}), t=archTotali(a);
   const hF=['Matricola','Produzione','Forme',...(tip?['Tipologia']:[]),'Note'];
-  const bF=g.map(x=>[/^\d+$/.test(x.matricola)?Number(x.matricola):x.matricola,x.mese?fmtMeseCorto(x.mese):'',x.forme,...(tip?[x.tipologia]:[]),x.note.replace(/ · /g,', ')]);
+  const bF=g.map(x=>[/^\d+$/.test(x.matricola)?Number(x.matricola):x.matricola,meseExcelData(x.mese),x.forme,...(tip?[x.tipologia]:[]),x.note.replace(/ · /g,', ')]);
   bF.push(['Totale','',t.forme,...(tip?['']:[]),'']);
   const hQ=[...BMQ.map(q=>q.t),'Note'];
   const bQ=t.righeQ.map(r=>[...BMQ.map(q=>r.cells[q.id]?r.cells[q.id].val:''),r.note.replace(/ · /g,', ')]);
@@ -2531,11 +2538,12 @@ function archExcel(id){
   try{
     if(!window.XLSX) throw new Error('libreria Excel non caricata');
     const wb=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([hF,...bF]),'Forme');
+    const wsF=XLSX.utils.aoa_to_sheet([hF,...bF]); excelFmtMeseCol(wsF,1,bF.length);
+    XLSX.utils.book_append_sheet(wb,wsF,'Forme');
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([hQ,...bQ]),'Altri quantitativi');
     XLSX.writeFile(wb,nomeFile+'.xlsx');
   }catch(e){
-    const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const esc=v=>'"'+String(csvVal(v)).replace(/"/g,'""')+'"';
     const csv='﻿'+[hF,...bF,[],hQ,...bQ].map(r=>r.map(esc).join(';')).join('\r\n');
     const el=document.createElement('a'); el.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); el.download=nomeFile+'.csv';
     document.body.appendChild(el); el.click(); el.remove();
@@ -2680,12 +2688,12 @@ async function invElimina(id){
 function invExcel(id){
   const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return;
   const head=['Scalera','Matricola','Mese/Anno','Stagionatura','Forme','Tipologia','Note'];
-  const body=invRighe(a).map(r=>[parseScalera(r.scalera),r.matricola?(/^\d+$/.test(String(r.matricola))?Number(r.matricola):String(r.matricola)):'',r.mese?fmtMeseCorto(r.mese):'',r.stag===null?'':r.stag+' mesi',Number(r.forme)||0,up(r.tipologia),up(r.note)]);
+  const body=invRighe(a).map(r=>[parseScalera(r.scalera),r.matricola?(/^\d+$/.test(String(r.matricola))?Number(r.matricola):String(r.matricola)):'',meseExcelData(r.mese),r.stag===null?'':r.stag+' mesi',Number(r.forme)||0,up(r.tipologia),up(r.note)]);
   body.push(['Totale','','','',invTot(a.righe).forme,'','']);
   const nomeFile='inventario-'+String(a.data_conta).slice(0,10);
   try{
     if(!window.XLSX) throw new Error('libreria Excel non caricata');
-    const ws=XLSX.utils.aoa_to_sheet([head,...body]); ws['!cols']=[{wch:9},{wch:10},{wch:11},{wch:14},{wch:8},{wch:12},{wch:24}];
+    const ws=XLSX.utils.aoa_to_sheet([head,...body]); excelFmtMeseCol(ws,2,body.length); ws['!cols']=[{wch:9},{wch:10},{wch:11},{wch:14},{wch:8},{wch:12},{wch:24}];
     const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Inventario');
     const al=invAltri(a);
     if(al.length){ const h2=['Prodotto','Forme intere','Forme in kg',...AF_KG.map(q=>q.t+' kg'),'Note'];
@@ -2694,7 +2702,7 @@ function invExcel(id){
       const w2=XLSX.utils.aoa_to_sheet([h2,...b2]); w2['!cols']=[{wch:24},{wch:12},{wch:12},...AF_KG.map(()=>({wch:16})),{wch:24}]; XLSX.utils.book_append_sheet(wb,w2,'Altri formaggi'); }
     XLSX.writeFile(wb,nomeFile+'.xlsx');
   }catch(e){
-    const esc=v=>'"'+String(v).replace(/"/g,'""')+'"';
+    const esc=v=>'"'+String(csvVal(v)).replace(/"/g,'""')+'"';
     const csv='﻿'+[head,...body].map(r=>r.map(esc).join(';')).join('\r\n');
     const el=document.createElement('a'); el.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})); el.download=nomeFile+'.csv';
     document.body.appendChild(el); el.click(); el.remove();

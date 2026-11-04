@@ -101,6 +101,7 @@ td:nth-child(2), td:nth-child(4){font-weight:700;}
 .badge.badge-pegno{background:#B3261E;color:#fff;}
 .badge.badge-bio{background:#1E7A47;color:#fff;}
 .badge.badge-grigio{background:#667483;color:#fff;}
+.badge.badge-mezzano{background:#D97757;color:#fff;}
 .hl-credem{color:#1B6B40;font-weight:700;}
 .hl-agricole{color:#0B63A0;font-weight:700;}
 @media (prefers-color-scheme: dark){
@@ -1560,6 +1561,7 @@ function badgeClass(tip){
   const t=up(tip).trim();
   if(t==='PEGNO') return 'badge-pegno';
   if(t==='BIO') return 'badge-bio';
+  if(t==='MEZZANO') return 'badge-mezzano';
   if(GREY_TIPOLOGIE.includes(t)) return 'badge-grigio';
   return '';
 }

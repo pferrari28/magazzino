@@ -1003,11 +1003,19 @@ function parseScalera(v){
 }
 const scaleraValida=v=>{ const t=String(v||'').trim(); return t!=='' && t.length<=30 && /^[0-9A-Za-zÀ-ÿ .\-/]+$/.test(t); };
 const fmtScalera=v=>v===null||v===undefined||v===''?'—':String(v);
+function normScalera(v){
+  // tollera spazi (anche non separabili), virgole/punti decimali tipo "10,0" e simili,
+  // così un confronto numerico pulito non viene rovinato da come il valore è stato scritto
+  let s=String(v??'').replace(/[\s ]+/g,'').trim();
+  const m=s.match(/^(\d+)(?:[.,]0+)?$/);
+  return m?m[1]:s;
+}
 function cmpScalera(a,b){
-  const na=/^\d+$/.test(String(a??'')), nb=/^\d+$/.test(String(b??''));
-  if(na&&nb) return Number(a)-Number(b);
+  const sa=normScalera(a), sb=normScalera(b);
+  const na=/^\d+$/.test(sa), nb=/^\d+$/.test(sb);
+  if(na&&nb) return Number(sa)-Number(sb);
   if(na) return -1; if(nb) return 1;
-  return String(a??'').localeCompare(String(b??''),'it');
+  return sa.localeCompare(sb,'it');
 }
 const SCALERE_TESTO=['TERRA','CORRIDOIO'];
 function elencoScalere(){
@@ -1491,7 +1499,7 @@ function resetFilters(){
   applyFilters();
 }
 
-let sortState={col:'scalera', dir:1};
+let sortState={col:null, dir:1};
 
 function toggleSort(col){
   if(sortState.col===col){ sortState.dir*=-1; }
@@ -1719,9 +1727,9 @@ document.getElementById('import-file').addEventListener('change', function(e){
 
 // ====== Ordinamento per colonna nelle liste di scarico e pegno ======
 const SORTS={
-  sc:{col:'scalera',dir:1},
-  pg:{col:'scalera',dir:1},
-  pl:{col:'scalera',dir:1}
+  sc:{col:'matricola',dir:1},
+  pg:{col:'matricola',dir:1},
+  pl:{col:'matricola',dir:1}
 };
 function paintSortHeaders(key){
   document.querySelectorAll('th.sortable[data-st="'+key+'"]').forEach(th=>{
@@ -2406,7 +2414,7 @@ function sortToggle(key,col,def){
 }
 const cmpTxt=(a,b)=>String(a||'').toLowerCase().localeCompare(String(b||'').toLowerCase(),'it',{numeric:true});
 function archSort(key,col){ sortToggle(key,col,key.endsWith(':f')?{col:'matricola',dir:1}:null); renderArchivio(); }
-function invSort(key,col){ sortToggle(key,col,{col:'scalera',dir:1}); renderInventari(); }
+function invSort(key,col){ sortToggle(key,col,{col:'matricola',dir:1}); renderInventari(); }
 async function loadArchivio(){
   if(!sb) return;
   try{
@@ -2630,7 +2638,7 @@ function renderInventari(){
 }
 function invRighe(a){
   const rif=new Date(String(a.data_conta).slice(0,10)+'T12:00:00');
-  const st=TAB_SORT[a.id+':i']||{col:'scalera',dir:1}, d=st.dir;
+  const st=TAB_SORT[a.id+':i']||{col:'matricola',dir:1}, d=st.dir;
   const vuoto=v=>v===null||v===undefined||v==='';
   const cmpMese=(x,y)=>x.mese<y.mese?-1:x.mese>y.mese?1:0;
   return a.righe.map(r=>({...r,stag:r.mese?stagionatura(r.mese,rif):null})).sort((x,y)=>{
@@ -2647,7 +2655,7 @@ function invRighe(a){
 }
 function invDettaglioHtml(a){
   const righe=invRighe(a), t=invTot(a.righe);
-  return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'scalera',dir:1})).join('')}</tr></thead><tbody>`+
+  return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
     righe.map(r=>`<tr><td>${escapeHtml(fmtScalera(r.scalera))}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
     `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+totTipologieHtml(a.righe)+invAltriHtml(a);
 }

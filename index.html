@@ -94,14 +94,14 @@ th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);whit
 th{background:var(--head);color:var(--muted);font-weight:600;font-size:.8rem;}
 tbody tr:hover{background:var(--head);}
 tbody tr.row-pegno,tbody tr.row-pegno:hover{background:var(--pegno-bg);}
-tbody tr.row-bio,tbody tr.row-bio:hover{background:#E9F5EE;}
-tbody tr.row-mezzano,tbody tr.row-mezzano:hover{background:#FDEADB;}
-tbody tr.row-giallo,tbody tr.row-giallo:hover{background:#FCF5E1;}
-tbody tr.row-granbon,tbody tr.row-granbon:hover{background:#E7ECF4;}
-tbody tr.row-sbiancato,tbody tr.row-sbiancato:hover{background:#F3F5F7;}
-tbody tr.row-retinato,tbody tr.row-retinato:hover{background:#F4F0EC;}
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) tbody tr.row-bio{background:#16302A;} :root:not([data-theme="light"]) tbody tr.row-mezzano{background:#35241D;} :root:not([data-theme="light"]) tbody tr.row-giallo{background:#302A18;} :root:not([data-theme="light"]) tbody tr.row-granbon{background:#252D38;} :root:not([data-theme="light"]) tbody tr.row-sbiancato{background:#2B323B;} :root:not([data-theme="light"]) tbody tr.row-retinato{background:#2F2923;} }
-:root[data-theme="dark"] tbody tr.row-bio{background:#16302A;} :root[data-theme="dark"] tbody tr.row-mezzano{background:#35241D;} :root[data-theme="dark"] tbody tr.row-giallo{background:#302A18;} :root[data-theme="dark"] tbody tr.row-granbon{background:#252D38;} :root[data-theme="dark"] tbody tr.row-sbiancato{background:#2B323B;} :root[data-theme="dark"] tbody tr.row-retinato{background:#2F2923;}
+body:not(.no-tinte) tbody tr.row-bio,body:not(.no-tinte) tbody tr.row-bio:hover{background:#E9F5EE;}
+body:not(.no-tinte) tbody tr.row-mezzano,body:not(.no-tinte) tbody tr.row-mezzano:hover{background:#FDEADB;}
+body:not(.no-tinte) tbody tr.row-giallo,body:not(.no-tinte) tbody tr.row-giallo:hover{background:#FCF5E1;}
+body:not(.no-tinte) tbody tr.row-granbon,body:not(.no-tinte) tbody tr.row-granbon:hover{background:#E7ECF4;}
+body:not(.no-tinte) tbody tr.row-sbiancato,body:not(.no-tinte) tbody tr.row-sbiancato:hover{background:#F3F5F7;}
+body:not(.no-tinte) tbody tr.row-retinato,body:not(.no-tinte) tbody tr.row-retinato:hover{background:#F4F0EC;}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) body:not(.no-tinte) tbody tr.row-bio{background:#16302A;} :root:not([data-theme="light"]) body:not(.no-tinte) tbody tr.row-mezzano{background:#35241D;} :root:not([data-theme="light"]) body:not(.no-tinte) tbody tr.row-giallo{background:#302A18;} :root:not([data-theme="light"]) body:not(.no-tinte) tbody tr.row-granbon{background:#252D38;} :root:not([data-theme="light"]) body:not(.no-tinte) tbody tr.row-sbiancato{background:#2B323B;} :root:not([data-theme="light"]) body:not(.no-tinte) tbody tr.row-retinato{background:#2F2923;} }
+:root[data-theme="dark"] body:not(.no-tinte) tbody tr.row-bio{background:#16302A;} :root[data-theme="dark"] body:not(.no-tinte) tbody tr.row-mezzano{background:#35241D;} :root[data-theme="dark"] body:not(.no-tinte) tbody tr.row-giallo{background:#302A18;} :root[data-theme="dark"] body:not(.no-tinte) tbody tr.row-granbon{background:#252D38;} :root[data-theme="dark"] body:not(.no-tinte) tbody tr.row-sbiancato{background:#2B323B;} :root[data-theme="dark"] body:not(.no-tinte) tbody tr.row-retinato{background:#2F2923;}
 td:nth-child(2), td:nth-child(4){font-weight:700;}
 #panel-bpr td,#panel-bgp td{font-weight:400 !important;}
 #panel-bpr .bm-tot td,#panel-bgp .bm-tot td{font-weight:700 !important;}
@@ -228,6 +228,7 @@ table.af-t td:nth-child(11) input{width:100%;}
   .app.print-bm .print-this .bm-detail td:last-child{display:table-cell !important;}
   .bm-exp-btn{display:none !important;}}
 .bm-exp-btn.on{border-color:var(--link);color:var(--link);}
+.tg-btn.on{border-color:var(--link);color:var(--link);background:var(--head);}
 .bm-tot td{font-weight:700;border-top:2px solid var(--line);}
 #panel-bpr .editing-row input,#panel-bgp .editing-row input{min-width:0;width:80px;padding:6px 5px;}
 @media print{
@@ -869,6 +870,8 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
   <div class="col-right">
   <div class="table-toolbar">
     <input id="q-search" type="text" placeholder="Cerca un valore in tutta la tabella…" oninput="applyFilters()">
+    <button class="print-btn tg-btn" id="tg-tinte" onclick="toggleTinte()" title="Evidenzia le righe con il colore della tipologia (il pegno resta sempre evidenziato)">🎨 Righe colorate</button>
+    <button class="print-btn tg-btn" id="tg-solonum" onclick="toggleSoloNum()" title="Mostra solo le scalere numeriche (1, 2, 3…), nasconde corsie, celle, spedizioni, terra ecc.">🔢 Solo scalere numeriche</button>
     <button class="print-btn" onclick="exportExcel()" title="Scarica la tabella come file Excel, con l'ordine e i filtri attuali">📊 Scarica Excel</button>
     <button class="print-btn" onclick="exportData()">⬇️ Esporta dati</button>
     <button class="print-btn" onclick="document.getElementById('import-file').click()">⬆️ Importa dati</button>
@@ -1550,9 +1553,23 @@ function sortRows(rows, st){
   });
 }
 
+// opzioni di visualizzazione della tabella (ricordate su questo dispositivo)
+const VISTA={ tinte:true, soloNum:false };
+try{ const v=JSON.parse(localStorage.getItem('magazzino_vista')||'{}'); if(typeof v.tinte==='boolean') VISTA.tinte=v.tinte; if(typeof v.soloNum==='boolean') VISTA.soloNum=v.soloNum; }catch(e){}
+function vistaSalva(){ try{ localStorage.setItem('magazzino_vista',JSON.stringify(VISTA)); }catch(e){} }
+function vistaPaint(){
+  document.body.classList.toggle('no-tinte',!VISTA.tinte);
+  const a=document.getElementById('tg-tinte'), b=document.getElementById('tg-solonum');
+  if(a){ a.classList.toggle('on',VISTA.tinte); a.textContent=(VISTA.tinte?'✓ ':'')+'🎨 Righe colorate'; }
+  if(b){ b.classList.toggle('on',VISTA.soloNum); b.textContent=(VISTA.soloNum?'✓ ':'')+'🔢 Solo scalere numeriche'; }
+}
+function toggleTinte(){ VISTA.tinte=!VISTA.tinte; vistaSalva(); vistaPaint(); }
+function toggleSoloNum(){ VISTA.soloNum=!VISTA.soloNum; vistaSalva(); vistaPaint(); applyFilters(); }
+document.addEventListener('DOMContentLoaded',vistaPaint); if(document.readyState!=='loading') vistaPaint();
 function applyFilters(){
   const quick=document.getElementById('q-search').value.trim().toLowerCase();
   let filtered=DATA.filter(r=>{
+    if(VISTA.soloNum && !/^\d+$/.test(String(r.scalera??'').trim())) return false;
     if(quick){
       const hay=[r.scalera,r.matricola,fmtMese(r.mese),fmtMeseTesto(r.mese),r.mese?stagionatura(r.mese)+' mesi':'',r.forme,r.tipologia,r.note].join(' ').toLowerCase();
       if(!hay.includes(quick)) return false;

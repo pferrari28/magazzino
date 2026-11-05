@@ -282,6 +282,12 @@ th.bm-th.sort-asc .arrow,th.bm-th.sort-desc .arrow{opacity:1;color:var(--link);}
 }
 #print-area{display:none;}
 @media print{
+  body.print-portrait table{min-width:0 !important;font-size:9pt !important;}
+  body.print-portrait th,body.print-portrait td{padding:4px 5px !important;white-space:normal;}
+  body.print-portrait #print-area table{font-size:9pt;}
+  body.print-portrait .badge{padding:1px 5px;font-size:7.5pt;}
+}
+@media print{
   body.print-gen .app,body.print-gen .overlay{display:none !important;}
   body.print-gen #print-area{display:block;color:#000;}
   #print-area h2{margin:0 0 4px;font-size:15pt;} #print-area .pa-sub{margin:0 0 12px;color:#444;font-size:10pt;}
@@ -530,7 +536,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <div class="table-toolbar bm-actions" style="margin-top:8px;">
       <button class="print-btn" onclick="bmExcel('bpr')">📊 Scarica Excel</button>
       <button class="print-btn bm-exp-btn" data-tab="bpr" onclick="bmEspandi('bpr')" title="Mostra il dettaglio di tutte le somme; la stampa le include">↕ Espandi calcoli</button>
-      <button class="print-btn" onclick="bmStampa('bpr')" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button>
+      <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="bmStampa('bpr')" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button>
     </div>
     <div class="table-wrap" style="margin-top:8px;">
       <table>
@@ -554,7 +560,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <div class="table-toolbar bm-actions" style="margin-top:8px;">
       <button class="print-btn" onclick="bmqExcel('bpr')">📊 Scarica Excel</button>
       <button class="print-btn bm-exp-btn" data-tab="bpr" onclick="bmEspandi('bpr')" title="Mostra il dettaglio di tutte le somme; la stampa le include">↕ Espandi calcoli</button>
-      <button class="print-btn" onclick="bmqStampa('bpr')">🖨️ Stampa / PDF</button>
+      <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="bmqStampa('bpr')">🖨️ Stampa / PDF</button>
     </div>
     <div class="table-wrap" style="margin-top:8px;">
       <table>
@@ -635,7 +641,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <div class="table-toolbar bm-actions" style="margin-top:8px;">
       <button class="print-btn" onclick="bmExcel('bgp')">📊 Scarica Excel</button>
       <button class="print-btn bm-exp-btn" data-tab="bgp" onclick="bmEspandi('bgp')" title="Mostra il dettaglio di tutte le somme; la stampa le include">↕ Espandi calcoli</button>
-      <button class="print-btn" onclick="bmStampa('bgp')" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button>
+      <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="bmStampa('bgp')" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button>
     </div>
     <div class="table-wrap" style="margin-top:8px;">
       <table>
@@ -658,7 +664,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <div class="table-toolbar bm-actions" style="margin-top:8px;">
       <button class="print-btn" onclick="bmqExcel('bgp')">📊 Scarica Excel</button>
       <button class="print-btn bm-exp-btn" data-tab="bgp" onclick="bmEspandi('bgp')" title="Mostra il dettaglio di tutte le somme; la stampa le include">↕ Espandi calcoli</button>
-      <button class="print-btn" onclick="bmqStampa('bgp')">🖨️ Stampa / PDF</button>
+      <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="bmqStampa('bgp')">🖨️ Stampa / PDF</button>
     </div>
     <div class="table-wrap" style="margin-top:8px;">
       <table>
@@ -714,7 +720,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     </div>
 
     <h3>Riepilogo altri formaggi</h3>
-    <div class="table-toolbar bm-actions" style="margin-top:8px;"><button class="print-btn" onclick="afExcel()">📊 Scarica Excel</button> <button class="print-btn" onclick="afStampa()" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button></div>
+    <div class="table-toolbar bm-actions" style="margin-top:8px;"><button class="print-btn" onclick="afExcel()">📊 Scarica Excel</button> <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="afStampa()" title="Apre la stampa: scegli «Salva come PDF» per ottenere un PDF">🖨️ Stampa / PDF</button></div>
     <div class="table-wrap" style="margin-top:8px;"><table class="af-r">
       <thead id="af-rhead"></thead>
       <tbody id="af-rbody"></tbody>
@@ -875,7 +881,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <button class="print-btn" onclick="exportExcel()" title="Scarica la tabella come file Excel, con l'ordine e i filtri attuali">📊 Scarica Excel</button>
     <button class="print-btn" onclick="exportData()">⬇️ Esporta dati</button>
     <button class="print-btn" onclick="document.getElementById('import-file').click()">⬆️ Importa dati</button>
-    <button class="print-btn" onclick="window.print()">🖨️ Stampa tabella</button>
+    <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="window.print()">🖨️ Stampa tabella</button>
     <input type="file" id="import-file" accept="application/json,.json" style="display:none">
   </div>
   <div class="table-wrap">
@@ -2523,10 +2529,26 @@ function renderArchivio(){
     const extra=BMQ.filter(q=>t.q[q.id]).map(q=>`${q.t.replace(' (kg)','')} ${fmtKg(t.q[q.id])} kg`).join(' · ');
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome||'Bilancio')}</b><span class="arch-sub">${a.tipo==='PR'?'Parmigiano Reggiano':'Grana Padano'} · chiuso il ${bmqData(a.chiuso_il)}</span></div>
       <div class="arch-tot">${fmtNum(t.forme)} forme${extra?' · '+extra:''}</div>
-      <div class="arch-act"><button class="print-btn" onclick="archApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="archExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="archStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="del-btn" onclick="archElimina('${a.id}')" title="Elimina dall'archivio">✕</button></div></div>
+      <div class="arch-act"><button class="print-btn" onclick="archApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="archExcel('${a.id}')">📊 Excel</button>${stOrBtn()}<button class="print-btn" onclick="archStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="del-btn" onclick="archElimina('${a.id}')" title="Elimina dall'archivio">✕</button></div></div>
       ${aperto?`<div class="arch-det">${archDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
 }
+// ====== Orientamento della stampa (orizzontale / verticale), ricordato su questo dispositivo
+let STAMPA_OR='landscape';
+try{ if(localStorage.getItem('magazzino_stampa')==='portrait') STAMPA_OR='portrait'; }catch(e){}
+const stOrTxt=()=>STAMPA_OR==='portrait'?'↕ Verticale':'↔ Orizzontale';
+function stOrBtn(){ return `<button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">${stOrTxt()}</button>`; }
+function stampaOrPaint(){ document.querySelectorAll('.st-or').forEach(b=>b.textContent=stOrTxt()); document.body.classList.toggle('print-portrait',STAMPA_OR==='portrait'); }
+function stampaOrToggle(){ STAMPA_OR=STAMPA_OR==='portrait'?'landscape':'portrait'; try{ localStorage.setItem('magazzino_stampa',STAMPA_OR); }catch(e){} stampaOrPaint(); }
+function stampaOrApplica(){
+  let st=document.getElementById('st-page'); if(!st){ st=document.createElement('style'); st.id='st-page'; }
+  st.textContent='@page{size:A4 '+STAMPA_OR+';margin:10mm}';
+  document.head.appendChild(st);   // sempre in fondo: vince sulle altre impostazioni di pagina
+  document.body.classList.toggle('print-portrait',STAMPA_OR==='portrait');
+}
+window.addEventListener('beforeprint',stampaOrApplica);
+{ const _print=window.print.bind(window); window.print=function(){ stampaOrApplica(); _print(); }; }
+document.addEventListener('DOMContentLoaded',stampaOrPaint); if(document.readyState!=='loading') stampaOrPaint();
 function stampaDoc(titolo,sub,html){
   const pa=document.getElementById('print-area');
   pa.innerHTML=`<h2>${escapeHtml(titolo)}</h2><p class="pa-sub">${escapeHtml(sub)} · stampato il ${new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})}</p>${html}`;
@@ -2654,7 +2676,7 @@ function renderInventari(){
     const t=invTot(a.righe), aperto=INV_APERTI.has(String(a.id));
     return `<div class="arch-card"><div class="arch-top"><div><b>${escapeHtml(a.nome)}</b><span class="arch-sub">Conta del ${invData(a.data_conta)}</span></div>
       <div class="arch-tot">${fmtNum(a.righe.length)} righe · ${fmtNum(t.forme)} forme · ${fmtNum(t.pegno)} in pegno${(a.altri_formaggi||[]).length?` · ${fmtNum(a.altri_formaggi.length)} righe altri formaggi`:''}</div>
-      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button><button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="print-btn" onclick="imApri('${a.id}')" title="Riapri questo inventario chiuso per correggerlo">✏️ Riapri e modifica</button><button class="print-btn" onclick="invTrasferisci('${a.id}')" title="Copia questa conta nell'inventario in corso (pagina Carico merce)">⇄ Trasferisci conta</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
+      <div class="arch-act"><button class="print-btn" onclick="invApri('${a.id}')">${aperto?'Chiudi dettaglio':'Apri dettaglio'}</button><button class="print-btn" onclick="invExcel('${a.id}')">📊 Excel</button>${stOrBtn()}<button class="print-btn" onclick="invStampa('${a.id}')">🖨️ Stampa / PDF</button><button class="print-btn" onclick="imApri('${a.id}')" title="Riapri questo inventario chiuso per correggerlo">✏️ Riapri e modifica</button><button class="print-btn" onclick="invTrasferisci('${a.id}')" title="Copia questa conta nell'inventario in corso (pagina Carico merce)">⇄ Trasferisci conta</button><button class="del-btn" onclick="invElimina('${a.id}')" title="Elimina inventario">✕</button></div></div>
       ${aperto?`<div class="arch-det">${invDettaglioHtml(a)}</div>`:''}</div>`;
   }).join('');
 }

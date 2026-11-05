@@ -94,6 +94,14 @@ th,td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);whit
 th{background:var(--head);color:var(--muted);font-weight:600;font-size:.8rem;}
 tbody tr:hover{background:var(--head);}
 tbody tr.row-pegno,tbody tr.row-pegno:hover{background:var(--pegno-bg);}
+tbody tr.row-bio,tbody tr.row-bio:hover{background:#E9F5EE;}
+tbody tr.row-mezzano,tbody tr.row-mezzano:hover{background:#FDEADB;}
+tbody tr.row-giallo,tbody tr.row-giallo:hover{background:#FCF5E1;}
+tbody tr.row-granbon,tbody tr.row-granbon:hover{background:#E7ECF4;}
+tbody tr.row-sbiancato,tbody tr.row-sbiancato:hover{background:#F3F5F7;}
+tbody tr.row-retinato,tbody tr.row-retinato:hover{background:#F4F0EC;}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) tbody tr.row-bio{background:#16302A;} :root:not([data-theme="light"]) tbody tr.row-mezzano{background:#35241D;} :root:not([data-theme="light"]) tbody tr.row-giallo{background:#302A18;} :root:not([data-theme="light"]) tbody tr.row-granbon{background:#252D38;} :root:not([data-theme="light"]) tbody tr.row-sbiancato{background:#2B323B;} :root:not([data-theme="light"]) tbody tr.row-retinato{background:#2F2923;} }
+:root[data-theme="dark"] tbody tr.row-bio{background:#16302A;} :root[data-theme="dark"] tbody tr.row-mezzano{background:#35241D;} :root[data-theme="dark"] tbody tr.row-giallo{background:#302A18;} :root[data-theme="dark"] tbody tr.row-granbon{background:#252D38;} :root[data-theme="dark"] tbody tr.row-sbiancato{background:#2B323B;} :root[data-theme="dark"] tbody tr.row-retinato{background:#2F2923;}
 td:nth-child(2), td:nth-child(4){font-weight:700;}
 #panel-bpr td,#panel-bgp td{font-weight:400 !important;}
 #panel-bpr .bm-tot td,#panel-bgp .bm-tot td{font-weight:700 !important;}
@@ -1423,7 +1431,7 @@ function renderScaricoList(){
   tbody.innerHTML=sorted.map(r=>{
     const matricolaTxt=r.matricola!=null && r.matricola!=='' ? String(r.matricola) : '—';
     const tipologiaUp=up(r.tipologia);
-    return `<tr>
+    return `<tr class="${rowTipClass(r.tipologia)}">
       <td>${escapeHtml(fmtScalera(r.scalera))}</td>
       <td>${matricolaTxt}</td>
       <td>${fmtMese(r.mese)}</td>
@@ -1558,6 +1566,11 @@ function escapeHtml(s){
   return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// riga evidenziata con una tinta leggera dello stesso colore del badge della tipologia
+function rowTipClass(tip){
+  const t=up(tip||'').trim(); if(!t) return '';
+  const b=badgeClass(t); return b?'row-'+b.slice(6):'row-giallo';
+}
 function badgeClass(tip){
   if(!tip) return '';
   const t=up(tip).trim();
@@ -1581,7 +1594,7 @@ function highlightNote(note){
 function renderRow(r){
   const matricolaTxt=r.matricola!=null && r.matricola!=='' ? String(r.matricola) : '—';
   const tipologiaUp=up(r.tipologia);
-  return `<tr class="${isPegno(r)?'row-pegno':''}">
+  return `<tr class="${rowTipClass(r.tipologia)}">
     <td>${escapeHtml(fmtScalera(r.scalera))}</td>
     <td>${matricolaTxt}</td>
     <td>${fmtMeseTesto(r.mese)}</td>
@@ -2006,7 +2019,7 @@ function renderBilancio(tab){
         <td><button class="edit-btn" onclick="bmSalvaModifica('${tab}',${i})" title="Salva">💾</button><button class="del-btn" onclick="bmAnnullaModifica('${tab}')" title="Annulla">✕</button></td>
       </tr>`;
     }
-    return `<tr>
+    return `<tr class="${bmHasTip(tab)?rowTipClass(g.tipologia):''}">
       <td>${escapeHtml(g.matricola)}</td>
       <td>${g.mese?fmtMeseCorto(g.mese):'—'}</td>
       <td>${bmApribile(g)?`<button class="bm-sum${(BM_OPEN[tab].has(g.key)||BM_EXP[tab])?' on':''}" onclick="bmApri('${tab}',${i})" title="${g.ids.length>1?'Vedi i singoli carichi':'Vedi il calcolo'}">${fmtNum(g.forme)}</button>`:fmtNum(g.forme)}${g.ids.length>1?`<span class="bm-n">(${g.ids.length} carichi)</span>`:''}</td>
@@ -2461,7 +2474,7 @@ function archDettaglioHtml(a){
   let h='<h4>Forme</h4>';
   if(!g.length) h+='<p class="bm-note">Nessuna riga di forme.</p>';
   else h+=`<div class="table-wrap"><table><thead><tr>${th('Matricola','matricola')}${th('Produzione','mese')}${th('Forme','forme')}${tip?th('Tipologia','tipologia'):''}${th('Note','note')}</tr></thead><tbody>`+
-    g.map(x=>`<tr><td>${escapeHtml(x.matricola)}</td><td>${x.mese?fmtMeseCorto(x.mese):'—'}</td><td>${fmtNum(x.forme)}${x.ids.length>1?`<span class="bm-n">(${x.ids.length} carichi)</span>`:''}</td>${tip?`<td>${x.tipologia?`<span class="badge ${badgeClass(x.tipologia)}">${escapeHtml(x.tipologia)}</span>`:'—'}</td>`:''}<td>${highlightNote(x.note)}</td></tr>`).join('')+
+    g.map(x=>`<tr class="${tip?rowTipClass(x.tipologia):''}"><td>${escapeHtml(x.matricola)}</td><td>${x.mese?fmtMeseCorto(x.mese):'—'}</td><td>${fmtNum(x.forme)}${x.ids.length>1?`<span class="bm-n">(${x.ids.length} carichi)</span>`:''}</td>${tip?`<td>${x.tipologia?`<span class="badge ${badgeClass(x.tipologia)}">${escapeHtml(x.tipologia)}</span>`:'—'}</td>`:''}<td>${highlightNote(x.note)}</td></tr>`).join('')+
     `<tr class="bm-tot"><td>Totale</td><td></td><td>${fmtNum(tot.forme)}</td>${tip?'<td></td>':''}<td></td></tr></tbody></table></div>`;
   h+='<h4>Altri quantitativi</h4>';
   const sq=TAB_SORT[kq];
@@ -2648,7 +2661,7 @@ function invRighe(a){
 function invDettaglioHtml(a){
   const righe=invRighe(a), t=invTot(a.righe);
   return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
-    righe.map(r=>`<tr><td>${escapeHtml(fmtScalera(r.scalera))}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
+    righe.map(r=>`<tr class="${rowTipClass(r.tipologia)}"><td>${escapeHtml(fmtScalera(r.scalera))}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
     `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+totTipologieHtml(a.righe)+invAltriHtml(a);
 }
 function invAltri(a){ return Array.isArray(a.altri_formaggi)?a.altri_formaggi:[]; }

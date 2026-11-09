@@ -1453,7 +1453,17 @@ function renderScaricoList(){
   restoreQty(qtyBackup);
 }
 
+// Invio sulla quantità = conferma lo scarico di quella riga (come il pulsante 💾)
+document.getElementById('scarico-tbody').addEventListener('keydown',e=>{
+  const el=e.target; if(e.key!=='Enter' || !el.id || !el.id.startsWith('sc-qty-')) return;
+  e.preventDefault(); scaricoSalva(el.id.slice(7));
+});
+const SC_IN_CORSO=new Set();   // evita doppi scarichi se si preme Invio due volte
 async function scaricoSalva(id){
+  if(SC_IN_CORSO.has(id)) return; SC_IN_CORSO.add(id);
+  try{ await scaricoSalvaEsegui(id); } finally{ SC_IN_CORSO.delete(id); }
+}
+async function scaricoSalvaEsegui(id){
   const rec=DATA.find(r=>r.id===id);
   const msg=document.getElementById('s-msg');
   if(!rec) return;

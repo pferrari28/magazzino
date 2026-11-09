@@ -1490,6 +1490,8 @@ async function scaricoSalvaEsegui(id){
   msg.className='msg ok';
   input.value='';
   await loadData();
+  scaricoResetRicerca();
+  const m=document.getElementById('sc-search-matricola'); if(m) m.focus();
 }
 
 async function scaricoElimina(id){

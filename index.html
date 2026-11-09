@@ -376,6 +376,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
 .im-diff ul{margin:6px 0 10px;padding-left:18px;font-size:.9rem;}
 .im-diff li.new{color:#2E7D4F;} .im-diff li.del{color:var(--danger);}
 .im-foot{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px;}
+.inv-cerca{margin:8px 0}.inv-cerca input{width:100%;max-width:380px}
 </style>
 </head>
 <body>
@@ -2569,7 +2570,7 @@ function stampaDoc(titolo,sub,html){
   document.body.classList.add('print-gen'); window.print();
 }
 function archStampa(id){ const a=ARCH_DATA.find(x=>String(x.id)===String(id)); if(!a) return; stampaDoc(a.nome||'Bilancio',(a.tipo==='PR'?'Parmigiano Reggiano':'Grana Padano')+' · chiuso il '+bmqData(a.chiuso_il),archDettaglioHtml(a)); }
-function invStampa(id){ const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return; stampaDoc(a.nome,'Conta del '+invData(a.data_conta),invDettaglioHtml(a)); }
+function invStampa(id){ const a=INV_DATA.find(x=>String(x.id)===String(id)); if(!a) return; stampaDoc(a.nome,'Conta del '+invData(a.data_conta),invDettaglioHtml(a,false)); }
 function afStampa(){
   if(!AF_DATA.length){ alert('Nessuna riga da stampare.'); return; }
   const t=document.querySelector('table.af-r').cloneNode(true);
@@ -2614,6 +2615,15 @@ function archExcel(id){
 const INV_TABLE='inventari';
 let INV_DATA=[], INV_ERRORE=null, INV_FULL=false;
 const INV_APERTI=new Set();
+const INV_Q={};   // testo di ricerca per inventario chiuso: INV_Q[id+':i'] (forme) e INV_Q[id+':a'] (altri formaggi)
+const invQ=k=>String(INV_Q[k]||'').trim().toLowerCase();
+function invRicercaHtml(k,ph){
+  return `<div class="inv-cerca"><input type="search" id="invq-${escapeHtml(k)}" value="${escapeHtml(INV_Q[k]||'')}" placeholder="${ph}" autocomplete="off" oninput="invCerca('${k}',this.value)"></div>`;
+}
+function invCerca(k,v){
+  INV_Q[k]=v; renderInventari();
+  const el=document.getElementById('invq-'+k); if(el){ el.focus(); try{ el.setSelectionRange(v.length,v.length); }catch(e){} }
+}
 async function loadInventari(completo){
   if(!sb) return;
   if(completo===undefined) completo=INV_FULL;
@@ -2709,11 +2719,15 @@ function invRighe(a){
     return c*d;
   });
 }
-function invDettaglioHtml(a){
-  const righe=invRighe(a), t=invTot(a.righe);
-  return `<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
+function invDettaglioHtml(a,filtra=true){
+  const q=filtra?invQ(a.id+':i'):'';
+  const tutte=invRighe(a), t=invTot(a.righe);
+  const righe=q?tutte.filter(r=>[fmtScalera(r.scalera),r.matricola,r.mese?fmtMeseCorto(r.mese):'',r.tipologia,r.note].map(v=>String(v??'').toLowerCase()).join(' ').includes(q)):tutte;
+  const tf=q?invTot(righe):t;
+  const vuoto=q&&!righe.length?`<p class="bm-note">Nessuna riga corrisponde a «${escapeHtml(q)}».</p>`:'';
+  return (filtra?invRicercaHtml(a.id+':i','Cerca in questo inventario: scalera, matricola, mese, tipologia, note…')+(q?`<p class="bm-note">${fmtNum(righe.length)} di ${fmtNum(tutte.length)} righe</p>`:''):'')+vuoto+`<div class="table-wrap"><table><thead><tr>${[['Scalera','scalera'],['Matricola','matricola'],['Mese/Anno','mese'],['Stagionatura','stag'],['Forme','forme'],['Tipologia','tipologia'],['Note','note']].map(([l,c])=>sortTh(l,a.id+':i',c,'invSort',{col:'matricola',dir:1})).join('')}</tr></thead><tbody>`+
     righe.map(r=>`<tr class="${rowTipClass(r.tipologia)}"><td>${escapeHtml(fmtScalera(r.scalera))}</td><td>${r.matricola?escapeHtml(String(r.matricola)):'—'}</td><td>${r.mese?fmtMeseCorto(r.mese):'—'}</td><td>${r.stag===null?'—':r.stag+' mesi'}</td><td>${fmtNum(r.forme)}</td><td>${r.tipologia?`<span class="badge ${badgeClass(r.tipologia)}">${escapeHtml(r.tipologia)}</span>`:'—'}</td><td>${highlightNote(r.note||'')}</td></tr>`).join('')+
-    `<tr class="bm-tot"><td>Totale</td><td></td><td></td><td></td><td>${fmtNum(t.forme)}</td><td></td><td></td></tr></tbody></table></div>`+totTipologieHtml(a.righe)+invAltriHtml(a);
+    `<tr class="bm-tot"><td>Totale${q?' (filtrate)':''}</td><td></td><td></td><td></td><td>${fmtNum(tf.forme)}</td><td></td><td></td></tr></tbody></table></div>`+totTipologieHtml(q?righe:a.righe)+invAltriHtml(a,filtra);
 }
 function invAltri(a){ return Array.isArray(a.altri_formaggi)?a.altri_formaggi:[]; }
 // Totale per tipologia: righe e forme per Normale (tipologia vuota), PEGNO, BIO, PADANO…
@@ -2730,10 +2744,12 @@ function totTipologieHtml(righe,titolo=true){
     l.map(x=>`<tr><td>${x.t==='NORMALE'?'Normale':`<span class="badge ${badgeClass(x.t)}">${nome(x.t)}</span>`}</td><td>${fmtNum(x.righe)}</td><td><b>${fmtNum(x.forme)}</b></td></tr>`).join('')+
     `<tr class="bm-tot"><td>Totale</td><td>${fmtNum(tr)}</td><td>${fmtNum(tf)}</td></tr></tbody></table></div>`;
 }
-function invAltriHtml(a){
-  const al=invAltri(a); if(!al.length) return '';
+function invAltriHtml(a,filtra=true){
+  const tutti=invAltri(a); if(!tutti.length) return '';
+  const q=filtra?invQ(a.id+':a'):'';
+  const al=q?tutti.filter(r=>[r.prodotto,r.note].map(v=>String(v??'').toLowerCase()).join(' ').includes(q)):tutti;
   const kg=v=>Number(v)?fmtKg(v):'—', som=k=>Math.round(al.reduce((t,r)=>t+(Number(r[k])||0),0)*100)/100;
-  return `<div class="bm-quant-t" style="margin-top:14px">Altri formaggi</div><div class="table-wrap"><table><thead><tr><th>Prodotto</th><th>Forme intere</th><th>Forme in kg</th>${AF_KG.map(q=>`<th>${q.t} kg</th>`).join('')}<th>Note</th></tr></thead><tbody>`+
+  return `<div class="bm-quant-t" style="margin-top:14px">Altri formaggi</div>`+(filtra?invRicercaHtml(a.id+':a','Cerca negli altri formaggi: prodotto, note…')+(q?`<p class="bm-note">${fmtNum(al.length)} di ${fmtNum(tutti.length)} righe</p>`:''):'')+(q&&!al.length?`<p class="bm-note">Nessuna riga corrisponde a «${escapeHtml(q)}».</p>`:'')+`<div class="table-wrap"><table><thead><tr><th>Prodotto</th><th>Forme intere</th><th>Forme in kg</th>${AF_KG.map(q=>`<th>${q.t} kg</th>`).join('')}<th>Note</th></tr></thead><tbody>`+
    al.map(r=>`<tr><td>${escapeHtml(r.prodotto)}</td><td>${Number(r.forme)?fmtNum(r.forme):'—'}</td><td>${kg(r.forme_kg)}</td>${AF_KG.map(q=>`<td>${kg(r[q.k])}</td>`).join('')}<td>${highlightNote(r.note||'')}</td></tr>`).join('')+
    `<tr class="bm-tot"><td>Totale</td><td>${fmtNum(al.reduce((t,r)=>t+(Number(r.forme)||0),0))}</td><td>${fmtKg(som('forme_kg'))}</td>${AF_KG.map(q=>`<td>${fmtKg(som(q.k))}</td>`).join('')}<td></td></tr></tbody></table></div>`;
 }

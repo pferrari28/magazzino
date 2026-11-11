@@ -2128,6 +2128,7 @@ async function bmSalva(tab,d){
   if(d.calcolo) riga.calcolo=d.calcolo;
   let {error}=await sb.from(BM_TABLE).insert(riga);
   if(error && /calcolo/i.test(error.message||'') && riga.calcolo){ delete riga.calcolo; ({error}=await sb.from(BM_TABLE).insert(riga)); }   // colonna non ancora creata: salva comunque
+  if(error && bmTipNotNull(error)){ riga.tipologia=riga.tipologia||''; ({error}=await sb.from(BM_TABLE).insert(riga)); }   // colonna Tipologia NOT NULL senza valore predefinito: manda vuoto
   btn.disabled=false;
   if(error){ msg.textContent='Salvataggio non riuscito: '+bmErroreTxt(error); msg.className='msg err'; return; }
   msg.textContent=`Caricato: matricola ${d.matricola}, produzione ${fmtMeseCorto(d.mese)}, ${fmtNum(d.forme)} forme.`;
@@ -2137,6 +2138,7 @@ async function bmSalva(tab,d){
   document.getElementById(tab+'-matricola').focus();
 }
 
+const bmTipNotNull=e=>/null value in column "tipologia"/i.test((e&&e.message)||'');
 function bmErroreTxt(e){
   const t=(e&&e.message)||String(e);
   return /tipologia/i.test(t) ? t+' — esegui lo script SQL che aggiunge la colonna Tipologia su Supabase.' : t;
@@ -3017,6 +3019,7 @@ async function bgCarica(tab){
   const btn=document.getElementById(tab+'-bg-submit'); btn.disabled=true;
   let ins=await sb.from(BM_TABLE).insert(righe);
   if(ins.error && /calcolo/i.test(ins.error.message||'')){ righe.forEach(r=>delete r.calcolo); ins=await sb.from(BM_TABLE).insert(righe); }
+  if(ins.error && bmTipNotNull(ins.error)){ righe.forEach(r=>{ r.tipologia=r.tipologia||''; }); ins=await sb.from(BM_TABLE).insert(righe); }
   btn.disabled=false;
   if(ins.error){ msg.textContent='Salvataggio non riuscito: '+bmErroreTxt(ins.error); msg.className='msg err'; return; }
   const tot=righe.reduce((t,r)=>t+r.forme,0);

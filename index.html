@@ -501,8 +501,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <div class="grid">
       <div class="bm-mat"><label>Matricola</label>
         <div class="mini-row">
-          <select id="bpr-select" aria-label="Scegli matricola dall'elenco" onchange="bmScegli('bpr')"><option value="">Elenco ▾</option></select>
-          <input id="bpr-matricola" type="text" list="bpr-list" placeholder="scrivi o scegli" autocomplete="off" autocapitalize="characters">
+          <input id="bpr-matricola" type="text" placeholder="es. 1703" autocomplete="off" autocapitalize="characters">
         </div>
       </div>
       <div><label>Produzione</label><input id="bpr-mese" type="text" placeholder="es. 325 = mar-25" maxlength="8"></div>
@@ -608,8 +607,7 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <div class="grid">
       <div class="bm-mat"><label>Matricola</label>
         <div class="mini-row">
-          <select id="bgp-select" aria-label="Scegli matricola dall'elenco" onchange="bmScegli('bgp')"><option value="">Elenco ▾</option></select>
-          <input id="bgp-matricola" type="text" list="bgp-list" placeholder="scrivi o scegli" autocomplete="off" autocapitalize="characters">
+          <input id="bgp-matricola" type="text" placeholder="es. 1703" autocomplete="off" autocapitalize="characters">
         </div>
       </div>
       <div><label>Produzione</label><input id="bgp-mese" type="text" placeholder="es. 325 = mar-25" maxlength="8"></div>
@@ -2014,13 +2012,6 @@ function renderBilancio(tab){
   const tbody=document.getElementById(tab+'-tbody');
   const count=document.getElementById(tab+'-count');
   const msg=document.getElementById(tab+'-msg');
-  // elenco matricole (datalist + menu a tendina per il cellulare)
-  const elenco=bmMatricole(tab);
-  document.getElementById(tab+'-list').innerHTML=elenco.map(m=>`<option value="${escapeHtml(m)}">`).join('');
-  const sel=document.getElementById(tab+'-select');
-  sel.innerHTML='<option value="">Elenco ▾</option>'+elenco.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-  sel.style.display=elenco.length?'':'none';
-  document.getElementById(tab+'-elenco-info').textContent=elenco.length?'':'L\'elenco delle matricole non è ancora stato caricato: per ora scrivi la matricola a mano.';
   if(bmHasTip(tab)){
     const usate=BM_DATA[BM_TIPO[tab]].map(x=>up(x.tipologia).trim()).filter(Boolean);
     const lista=[...new Set([...BM_TIP_BASE,...usate.sort()])];
@@ -2047,7 +2038,7 @@ function renderBilancio(tab){
   tbody.innerHTML=gruppi.map((g,i)=>{
     if(BM_EDIT[tab]===g.key){
       return `<tr class="editing-row">
-        <td><input type="text" id="${tab}-e-matricola" value="${escapeHtml(g.matricola)}" list="${tab}-list" autocapitalize="characters"></td>
+        <td><input type="text" id="${tab}-e-matricola" value="${escapeHtml(g.matricola)}" autocapitalize="characters"></td>
         <td><input type="text" id="${tab}-e-mese" value="${g.mese?fmtMeseCorto(g.mese):''}" placeholder="es. 325" maxlength="8"></td>
         <td><input type="text" class="calc" autocomplete="off" id="${tab}-e-forme" value="${g.forme}"></td>
         ${bmHasTip(tab)?`<td><input type="text" id="${tab}-e-tipologia" value="${escapeHtml(g.tipologia)}" list="${tab}-tip-list"></td>`:''}
@@ -2071,11 +2062,6 @@ function renderBilancio(tab){
   }
   tbody.insertAdjacentHTML('beforeend',`<tr class="bm-tot"><td>Totale</td><td></td><td>${fmtNum(gruppi.reduce((t,g)=>t+g.forme,0))}</td>${bmHasTip(tab)?'<td></td>':''}<td></td><td></td></tr>`);
   count.textContent=`${gruppi.length} righe · ${fmtNum(gruppi.reduce((t,g)=>t+g.forme,0))} forme totali`;
-}
-
-function bmScegli(tab){
-  const sel=document.getElementById(tab+'-select');
-  if(sel.value){ document.getElementById(tab+'-matricola').value=sel.value; sel.value=''; document.getElementById(tab+'-mese').focus(); }
 }
 
 function bmLeggiForm(tab){
@@ -2933,7 +2919,7 @@ function bgAggiungi(tab,n){
     const i=++BG_N[tab];
     const tr=document.createElement('tr'); tr.dataset.r=i;
     tr.innerHTML=`<td>${i}</td>
-      <td><input id="${bgId(tab,i,'ma')}" type="text" autocomplete="off" autocapitalize="characters" list="${tab}-list"></td>
+      <td><input id="${bgId(tab,i,'ma')}" type="text" autocomplete="off" autocapitalize="characters"></td>
       <td><input id="${bgId(tab,i,'me')}" type="text" autocomplete="off" maxlength="8" placeholder="325"></td>
       <td><input id="${bgId(tab,i,'fo')}" class="calc" type="text" autocomplete="off"></td>
       ${listTip?`<td><input id="${bgId(tab,i,'ti')}" type="text" autocomplete="off" list="${tab}-tip-list"></td>`:''}

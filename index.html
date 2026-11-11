@@ -2803,8 +2803,8 @@ function gxAggiungi(n){
     const i=++GX_N;
     const tr=document.createElement('tr'); tr.dataset.r=i;
     tr.innerHTML=`<td>${i}</td>
-      <td><input id="${gxId(i,'sc')}" type="text" autocomplete="off" autocapitalize="characters" list="sc-list-gx"></td>
-      <td><input id="${gxId(i,'ma')}" type="text" autocomplete="off" autocapitalize="characters" list="gx-mat-list"></td>
+      <td><input id="${gxId(i,'sc')}" type="text" autocomplete="off" autocapitalize="characters"></td>
+      <td><input id="${gxId(i,'ma')}" type="text" autocomplete="off" autocapitalize="characters"></td>
       <td><input id="${gxId(i,'me')}" type="text" autocomplete="off" maxlength="8" placeholder="325"></td>
       <td><input id="${gxId(i,'fo')}" class="calc" type="text" autocomplete="off"></td>
       <td><input id="${gxId(i,'ti')}" type="text" autocomplete="off" list="tip-list"></td>

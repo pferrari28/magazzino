@@ -377,6 +377,14 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
 .im-diff li.new{color:#2E7D4F;} .im-diff li.del{color:var(--danger);}
 .im-foot{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px;}
 .inv-cerca{margin:8px 0}.inv-cerca input{width:100%;max-width:380px}
+.stp-box{margin:8px 0 10px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--head);}
+.stp-t{font-weight:600;margin-bottom:8px;} .stp-t span{font-weight:400;color:var(--muted);font-size:.85rem;margin-left:6px;}
+.stp-list{display:flex;flex-wrap:wrap;gap:8px 18px;margin-bottom:10px;}
+.stp-i{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.9rem;} .stp-i input{width:auto;margin:0;}
+.stp-n{color:var(--muted);font-size:.8rem;}
+.stp-act{display:flex;flex-wrap:wrap;gap:8px;align-items:center;} .stp-act .btn{margin:0;} .stp-sum{flex:1;color:var(--muted);font-size:.85rem;}
+.print-tip{display:none;}
+@media print{ .stp-box{display:none !important;} .print-tip:not(:empty){display:block;margin:0 0 10px;color:#444;font-size:10pt;} }
 </style>
 </head>
 <body>
@@ -880,9 +888,21 @@ tr.im-r.del input{text-decoration:line-through;opacity:.45;pointer-events:none;}
     <button class="print-btn" onclick="exportExcel()" title="Scarica la tabella come file Excel, con l'ordine e i filtri attuali">📊 Scarica Excel</button>
     <button class="print-btn" onclick="exportData()">⬇️ Esporta dati</button>
     <button class="print-btn" onclick="document.getElementById('import-file').click()">⬆️ Importa dati</button>
-    <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="window.print()">🖨️ Stampa tabella</button>
+    <button class="print-btn st-or" type="button" onclick="stampaOrToggle()" title="Orientamento del foglio in stampa: clic per cambiare">↔ Orizzontale</button> <button class="print-btn" onclick="stpApri()" title="Scegli le tipologie da stampare (di base tutte)">🖨️ Stampa tabella</button>
     <input type="file" id="import-file" accept="application/json,.json" style="display:none">
   </div>
+  <div class="stp-box" id="stp-box" style="display:none">
+    <div class="stp-t">Tipologie da stampare <span>togli la spunta a quelle che non servono</span></div>
+    <div class="stp-list" id="stp-list"></div>
+    <div class="stp-act">
+      <button class="print-btn" type="button" onclick="stpTutte(true)">Tutte</button>
+      <button class="print-btn" type="button" onclick="stpTutte(false)">Nessuna</button>
+      <span class="stp-sum" id="stp-sum"></span>
+      <button class="btn ghost" type="button" onclick="stpChiudi()">Annulla</button>
+      <button class="btn" type="button" onclick="stpStampa()">🖨️ Stampa</button>
+    </div>
+  </div>
+  <p class="print-tip" id="print-tip"></p>
   <div class="table-wrap">
     <table>
       <thead><tr id="thead-row">
@@ -1583,10 +1603,42 @@ function vistaPaint(){
 function toggleTinte(){ VISTA.tinte=!VISTA.tinte; vistaSalva(); vistaPaint(); }
 function toggleSoloNum(){ VISTA.soloNum=!VISTA.soloNum; vistaSalva(); vistaPaint(); applyFilters(); }
 document.addEventListener('DOMContentLoaded',vistaPaint); if(document.readyState!=='loading') vistaPaint();
+// ====== Stampa tabella: scelta delle tipologie (di base tutte)
+let STP_ESCL=null;
+const stpTip=r=>up(r.tipologia||'').trim()||'NORMALE';
+const stpNome=t=>t==='NORMALE'?'Normale':t;
+function stpApri(){
+  const box=document.getElementById('stp-box');
+  if(box.style.display===''){ stpChiudi(); return; }
+  const m=new Map();
+  DATA.forEach(r=>{ const t=stpTip(r), x=m.get(t)||{t,righe:0,forme:0}; x.righe++; x.forme+=Number(r.forme)||0; m.set(t,x); });
+  const l=[...m.values()].sort((a,b)=>(a.t==='NORMALE'?-1:b.t==='NORMALE'?1:b.forme-a.forme||a.t.localeCompare(b.t)));
+  if(!l.length){ alert('Nessuna riga da stampare.'); return; }
+  document.getElementById('stp-list').innerHTML=l.map(x=>`<label class="stp-i"><input type="checkbox" value="${escapeHtml(x.t)}" checked onchange="stpConta()"> ${x.t==='NORMALE'?'Normale':`<span class="badge ${badgeClass(x.t)}">${escapeHtml(x.t)}</span>`} <span class="stp-n">${fmtNum(x.forme)} forme</span></label>`).join('');
+  box.style.display=''; stpConta();
+}
+function stpChiudi(){ document.getElementById('stp-box').style.display='none'; }
+function stpTutte(v){ document.querySelectorAll('#stp-list input').forEach(c=>c.checked=v); stpConta(); }
+function stpScelte(){ const c=[...document.querySelectorAll('#stp-list input')]; return {si:c.filter(x=>x.checked).map(x=>x.value), no:c.filter(x=>!x.checked).map(x=>x.value)}; }
+function stpConta(){ const {si,no}=stpScelte(); document.getElementById('stp-sum').textContent=no.length?(si.length?`${si.length} di ${si.length+no.length} tipologie`:'nessuna tipologia scelta'):'tutte le tipologie'; }
+function stpStampa(){
+  const {si,no}=stpScelte();
+  if(!si.length){ alert('Scegli almeno una tipologia da stampare.'); return; }
+  STP_ESCL=no.length?new Set(no):null;
+  applyFilters();
+  const pt=document.getElementById('print-tip');
+  pt.textContent=STP_ESCL?'Tipologie stampate: '+si.map(stpNome).join(', ')+' · '+document.getElementById('count').textContent:'';
+  stpChiudi();
+  let fatto=false;
+  const pulisci=()=>{ if(fatto) return; fatto=true; STP_ESCL=null; pt.textContent=''; applyFilters(); window.removeEventListener('afterprint',pulisci); };
+  window.addEventListener('afterprint',pulisci);
+  window.print();
+}
 function applyFilters(){
   const quick=document.getElementById('q-search').value.trim().toLowerCase();
   let filtered=DATA.filter(r=>{
     if(VISTA.soloNum && !/^\d+$/.test(String(r.scalera??'').trim())) return false;
+    if(STP_ESCL && STP_ESCL.has(stpTip(r))) return false;
     if(quick){
       const hay=[r.scalera,r.matricola,fmtMese(r.mese),fmtMeseTesto(r.mese),r.mese?stagionatura(r.mese)+' mesi':'',r.forme,r.tipologia,r.note].join(' ').toLowerCase();
       if(!hay.includes(quick)) return false;
